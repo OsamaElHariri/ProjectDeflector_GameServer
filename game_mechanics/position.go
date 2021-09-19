@@ -1,17 +1,17 @@
-package main
+package gamemechanics
 
 type Position struct {
-	x int
-	y int
+	X int
+	Y int
 }
 
 func position(x int, y int) Position {
 	return Position{
-		x: x,
-		y: y,
+		X: x,
+		Y: y,
 	}
 }
 
 func (pos Position) equals(pos2 Position) bool {
-	return pos.x == pos2.x && pos.y == pos2.y
+	return pos.X == pos2.X && pos.Y == pos2.Y
 }

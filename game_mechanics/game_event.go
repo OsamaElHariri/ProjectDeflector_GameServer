@@ -1,4 +1,4 @@
-package main
+package gamemechanics
 
 const (
 	CREATE  = "create"
@@ -10,4 +10,13 @@ type GameEvent struct {
 	position   Position
 	targetType string
 	owner      string
+}
+
+func NewGameEvent(x int, y int, targetType string) GameEvent {
+	return GameEvent{
+		name:       CREATE,
+		position:   Position{X: x, Y: y},
+		targetType: targetType,
+		owner:      "anyone",
+	}
 }

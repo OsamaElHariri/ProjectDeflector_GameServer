@@ -1,4 +1,4 @@
-package main
+package gamemechanics
 
 const (
 	SLASH     = "slash"
@@ -6,10 +6,10 @@ const (
 )
 
 type Pawn struct {
-	position      Position
-	name          string
-	turnPlaced    int
-	turnDestroyed int
+	Position      Position
+	Name          string
+	TurnPlaced    int
+	TurnDestroyed int
 }
 
 func (pawn Pawn) getDeflectedDirection(currentDirection int) int {
@@ -28,11 +28,11 @@ func (pawn Pawn) getDeflectedDirection(currentDirection int) int {
 		LEFT:  DOWN,
 	}
 
-	if pawn.name == BACKSLASH {
+	if pawn.Name == BACKSLASH {
 		return backslashDeflection[currentDirection]
 	}
 
-	if pawn.name == SLASH {
+	if pawn.Name == SLASH {
 		return slashDeflection[currentDirection]
 	}
 	return currentDirection

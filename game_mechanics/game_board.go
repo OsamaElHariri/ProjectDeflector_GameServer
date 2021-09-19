@@ -1,4 +1,4 @@
-package main
+package gamemechanics
 
 import (
 	"errors"
@@ -12,44 +12,58 @@ const (
 )
 
 type GameBoardDefenition struct {
-	yMax   int
-	events []GameEvent
+	YMax   int
+	Events []GameEvent
 }
 
 type GameBoard struct {
 	defenition GameBoardDefenition
-	xMin       int
-	xMax       int
-	pawns      [][]Pawn
+	XMin       int
+	XMax       int
+	Pawns      [][]Pawn
 }
 
-func newGameBoard(defenition GameBoardDefenition) (GameBoard, error) {
+type Deflection struct {
+	Position    Position
+	ToDirection int
+}
+
+func NewGameBoardDefinition() GameBoardDefenition {
+	definition := GameBoardDefenition{
+		YMax:   5,
+		Events: []GameEvent{},
+	}
+
+	return definition
+}
+
+func NewGameBoard(defenition GameBoardDefenition) (GameBoard, error) {
 	gameBoard := GameBoard{
 		defenition: defenition,
-		pawns:      make([][]Pawn, defenition.yMax),
+		Pawns:      make([][]Pawn, defenition.YMax),
 	}
-	for _, event := range defenition.events {
-		gameBoard = applyEvent(gameBoard, event)
+	for _, event := range defenition.Events {
+		gameBoard = ApplyEvent(gameBoard, event)
 	}
 
 	return gameBoard, nil
 }
 
 func (gameBoard GameBoard) getPawn(position Position) (Pawn, error) {
-	index, err := getPawnIndex(gameBoard.pawns, position)
+	index, err := getPawnIndex(gameBoard.Pawns, position)
 	if err != nil {
 		return Pawn{}, err
 	}
-	return gameBoard.pawns[position.y][index], nil
+	return gameBoard.Pawns[position.Y][index], nil
 }
 
 func getPawnIndex(pawns [][]Pawn, position Position) (int, error) {
-	if !isWithinBoard(pawns, position.y) {
+	if !isWithinBoard(pawns, position.Y) {
 		return 0, errors.New("out of bounds")
 	}
 
-	for i, pawn := range pawns[position.y] {
-		if pawn.position.x == position.x {
+	for i, pawn := range pawns[position.Y] {
+		if pawn.Position.X == position.X {
 			return i, nil
 		}
 	}
@@ -61,11 +75,11 @@ func isWithinBoard(pawns [][]Pawn, yCoord int) bool {
 	return yCoord >= 0 && yCoord < len(pawns)
 }
 
-func applyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
+func ApplyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
 	if event.name == CREATE {
-		updatedPawns, err := addPawn(gameBoard.pawns, event)
+		updatedPawns, err := addPawn(gameBoard.Pawns, event)
 		if err == nil {
-			gameBoard.pawns = updatedPawns
+			gameBoard.Pawns = updatedPawns
 
 		}
 	}
@@ -73,21 +87,21 @@ func applyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
 }
 
 func addPawn(pawns [][]Pawn, event GameEvent) ([][]Pawn, error) {
-	if !isWithinBoard(pawns, event.position.y) {
+	if !isWithinBoard(pawns, event.position.Y) {
 		return pawns, errors.New("invalid pawn position")
 	}
 
 	newPawn := Pawn{
-		position:   event.position,
-		name:       event.targetType,
-		turnPlaced: 0,
+		Position:   event.position,
+		Name:       event.targetType,
+		TurnPlaced: 0,
 	}
 
 	index, err := getPawnIndex(pawns, event.position)
 	if err == nil {
-		pawns[event.position.y][index] = newPawn
+		pawns[event.position.Y][index] = newPawn
 	} else {
-		pawns[event.position.y] = append(pawns[event.position.y], newPawn)
+		pawns[event.position.Y] = append(pawns[event.position.Y], newPawn)
 	}
 
 	return pawns, nil
@@ -96,8 +110,8 @@ func addPawn(pawns [][]Pawn, event GameEvent) ([][]Pawn, error) {
 func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirection int) (Pawn, error) {
 
 	if currentDirection == UP {
-		for i := currentPosition.y + 1; i < gameBoard.defenition.yMax; i++ {
-			pawn, err := gameBoard.getPawn(position(currentPosition.x, i))
+		for i := currentPosition.Y + 1; i < gameBoard.defenition.YMax; i++ {
+			pawn, err := gameBoard.getPawn(position(currentPosition.X, i))
 			if err == nil {
 				return pawn, nil
 			}
@@ -106,8 +120,8 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 	}
 
 	if currentDirection == DOWN {
-		for i := currentPosition.y - 1; i > 0; i-- {
-			pawn, err := gameBoard.getPawn(position(currentPosition.x, i))
+		for i := currentPosition.Y - 1; i > 0; i-- {
+			pawn, err := gameBoard.getPawn(position(currentPosition.X, i))
 			if err == nil {
 				return pawn, nil
 			}
@@ -115,21 +129,21 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 		return Pawn{}, errors.New("no next pawn")
 	}
 
-	if !isWithinBoard(gameBoard.pawns, currentPosition.y) {
+	if !isWithinBoard(gameBoard.Pawns, currentPosition.Y) {
 		return Pawn{}, errors.New("invalid current position")
 	}
 
 	if currentDirection == LEFT {
 		indexNearest := -1
-		for index, pawn := range gameBoard.pawns[currentPosition.y] {
-			if pawn.position.x < currentPosition.x {
-				if indexNearest < 0 || (indexNearest >= 0 && pawn.position.x > gameBoard.pawns[currentPosition.y][indexNearest].position.x) {
+		for index, pawn := range gameBoard.Pawns[currentPosition.Y] {
+			if pawn.Position.X < currentPosition.X {
+				if indexNearest < 0 || (indexNearest >= 0 && pawn.Position.X > gameBoard.Pawns[currentPosition.Y][indexNearest].Position.X) {
 					indexNearest = index
 				}
 			}
 		}
 		if indexNearest >= 0 {
-			return gameBoard.pawns[currentPosition.y][indexNearest], nil
+			return gameBoard.Pawns[currentPosition.Y][indexNearest], nil
 		} else {
 			return Pawn{}, errors.New("no next pawn")
 		}
@@ -137,15 +151,15 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 	if currentDirection == RIGHT {
 		indexNearest := -1
-		for index, pawn := range gameBoard.pawns[currentPosition.y] {
-			if pawn.position.x > currentPosition.x {
-				if indexNearest < 0 || (indexNearest >= 0 && pawn.position.x < gameBoard.pawns[currentPosition.y][indexNearest].position.x) {
+		for index, pawn := range gameBoard.Pawns[currentPosition.Y] {
+			if pawn.Position.X > currentPosition.X {
+				if indexNearest < 0 || (indexNearest >= 0 && pawn.Position.X < gameBoard.Pawns[currentPosition.Y][indexNearest].Position.X) {
 					indexNearest = index
 				}
 			}
 		}
 		if indexNearest >= 0 {
-			return gameBoard.pawns[currentPosition.y][indexNearest], nil
+			return gameBoard.Pawns[currentPosition.Y][indexNearest], nil
 		} else {
 			return Pawn{}, errors.New("no next pawn")
 		}
@@ -155,19 +169,36 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 }
 
 func (gameBoard GameBoard) getFinalDirection(startingPosition Position, startingDirection int) int {
+	deflections := gameBoard.GetDeflections(startingPosition, startingDirection)
+	deflectionCount := len(deflections)
+	return deflections[deflectionCount-1].ToDirection
+}
+
+func (gameBoard GameBoard) GetDeflections(startingPosition Position, startingDirection int) []Deflection {
 	currentDirection := startingDirection
 	currentPosition := startingPosition
+
+	deflections := []Deflection{
+		{
+			Position:    currentPosition,
+			ToDirection: currentDirection,
+		},
+	}
 
 	// being stuck in an infinite loop is not possible when given valid inputs.
 	// an upperbound of len(events) * 2 protects against the possibility of
 	// an infinite loop in case unexpected inputs are passed in
-	for i := 0; i < len(gameBoard.defenition.events)*2; i++ {
+	for i := 0; i < len(gameBoard.defenition.Events)*2; i++ {
 		pawn, err := gameBoard.getNextPawn(currentPosition, currentDirection)
 		if err != nil {
-			return currentDirection
+			return deflections
 		}
-		currentPosition = pawn.position
+		currentPosition = pawn.Position
 		currentDirection = pawn.getDeflectedDirection(currentDirection)
+		deflections = append(deflections, Deflection{
+			Position:    currentPosition,
+			ToDirection: currentDirection,
+		})
 	}
-	return currentDirection
+	return deflections
 }
