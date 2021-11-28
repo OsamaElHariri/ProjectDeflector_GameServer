@@ -1,8 +1,8 @@
 package gamemechanics
 
 const (
-	CREATE  = "create"
-	DESTROY = "destroy"
+	CREATE_PAWN = "create"
+	DESTROY     = "destroy"
 )
 
 type GameEvent struct {
@@ -14,7 +14,7 @@ type GameEvent struct {
 
 func NewGameEvent(x int, y int, targetType string) GameEvent {
 	return GameEvent{
-		name:       CREATE,
+		name:       CREATE_PAWN,
 		position:   Position{X: x, Y: y},
 		targetType: targetType,
 		owner:      "anyone",

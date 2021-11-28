@@ -8,15 +8,15 @@ func TestNewGameBoard(t *testing.T) {
 		YMax: 5,
 		Events: []GameEvent{
 			{
-				name:     CREATE,
+				name:     CREATE_PAWN,
 				position: position(1, 1),
 			},
 			{
-				name:     CREATE,
+				name:     CREATE_PAWN,
 				position: position(1, 1),
 			},
 			{
-				name:     CREATE,
+				name:     CREATE_PAWN,
 				position: position(500, 2),
 			},
 		},
@@ -52,27 +52,27 @@ func TestPawnTraversal(t *testing.T) {
 		YMax: 5,
 		Events: []GameEvent{
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(1, 1),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: SLASH,
 				position:   position(1, 4),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(7, 4),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(3, 4),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(-1, 4),
 			},
@@ -150,12 +150,12 @@ func TestGetFinalDirection(t *testing.T) {
 		YMax: 5,
 		Events: []GameEvent{
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(1, 1),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: SLASH,
 				position:   position(-2, 1),
 			},
@@ -175,22 +175,22 @@ func TestGetFinalDirection(t *testing.T) {
 		YMax: 5,
 		Events: []GameEvent{
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: SLASH,
 				position:   position(0, 1),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: SLASH,
 				position:   position(1, 1),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
 				position:   position(1, 2),
 			},
 			{
-				name:       CREATE,
+				name:       CREATE_PAWN,
 				targetType: SLASH,
 				position:   position(0, 2),
 			},

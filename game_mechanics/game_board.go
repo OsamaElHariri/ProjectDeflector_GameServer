@@ -76,7 +76,7 @@ func isWithinBoard(pawns [][]Pawn, yCoord int) bool {
 }
 
 func ApplyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
-	if event.name == CREATE {
+	if event.name == CREATE_PAWN {
 		updatedPawns, err := addPawn(gameBoard.Pawns, event)
 		if err == nil {
 			gameBoard.Pawns = updatedPawns
