@@ -35,12 +35,12 @@ func TestNewGameBoard(t *testing.T) {
 		t.Errorf("Failed to get pawn")
 	}
 
-	pawn, err = gameBoard.getPawn(position(0, 1))
+	_, err = gameBoard.getPawn(position(0, 1))
 	if err == nil {
 		t.Errorf("Got pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getPawn(position(1, 0))
+	_, err = gameBoard.getPawn(position(1, 0))
 	if err == nil {
 		t.Errorf("Got pawn when there is no pawn")
 	}
@@ -103,42 +103,42 @@ func TestPawnTraversal(t *testing.T) {
 		t.Errorf("Failed to get next pawn, got (%d, %d)", pawn.Position.X, pawn.Position.Y)
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(1, 1), DOWN)
+	_, err = gameBoard.getNextPawn(position(1, 1), DOWN)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(-1, 4), LEFT)
+	_, err = gameBoard.getNextPawn(position(-1, 4), LEFT)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(7, 4), RIGHT)
+	_, err = gameBoard.getNextPawn(position(7, 4), RIGHT)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(2, 2), UP)
+	_, err = gameBoard.getNextPawn(position(2, 2), UP)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(2, 2), DOWN)
+	_, err = gameBoard.getNextPawn(position(2, 2), DOWN)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(2, 2), LEFT)
+	_, err = gameBoard.getNextPawn(position(2, 2), LEFT)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(2, 2), RIGHT)
+	_, err = gameBoard.getNextPawn(position(2, 2), RIGHT)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getNextPawn(position(2, 1000), RIGHT)
+	_, err = gameBoard.getNextPawn(position(2, 1000), RIGHT)
 	if err == nil {
 		t.Errorf("Got next pawn when there is no pawn")
 	}
@@ -152,7 +152,7 @@ func TestGetFinalDirection(t *testing.T) {
 			{
 				name:       CREATE_PAWN,
 				targetType: BACKSLASH,
-				position:   position(1, 1),
+				position:   position(0, 1),
 			},
 			{
 				name:       CREATE_PAWN,
@@ -166,9 +166,9 @@ func TestGetFinalDirection(t *testing.T) {
 		t.Errorf("Failed to created game board")
 	}
 
-	finalDirection := gameBoard.getFinalDirection(position(1, 0), UP)
-	if finalDirection != DOWN {
-		t.Errorf("Wrong simple final direction %d", finalDirection)
+	_, deflections := ProcessDeflection(gameBoard)
+	if deflections[len(deflections)-1].ToDirection != DOWN {
+		t.Errorf("Wrong simple final direction %d", deflections[len(deflections)-1].ToDirection)
 	}
 
 	gameBoard, err = NewGameBoard(GameBoardDefenition{
@@ -201,14 +201,8 @@ func TestGetFinalDirection(t *testing.T) {
 		t.Errorf("Failed to created game board")
 	}
 
-	finalDirection = gameBoard.getFinalDirection(position(0, 0), UP)
-	if finalDirection != LEFT {
-		t.Errorf("Wrong final direction %d", finalDirection)
+	_, deflections = ProcessDeflection(gameBoard)
+	if deflections[len(deflections)-1].ToDirection != LEFT {
+		t.Errorf("Wrong final direction %d", deflections[len(deflections)-1].ToDirection)
 	}
-
-	finalDirection = gameBoard.getFinalDirection(position(-1, 1), RIGHT)
-	if finalDirection != DOWN {
-		t.Errorf("Wrong final direction %d", finalDirection)
-	}
-
 }

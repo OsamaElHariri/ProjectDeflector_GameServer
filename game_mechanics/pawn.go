@@ -10,6 +10,7 @@ type Pawn struct {
 	Name          string
 	TurnPlaced    int
 	TurnDestroyed int
+	Durability    int
 }
 
 func (pawn Pawn) getDeflectedDirection(currentDirection int) int {

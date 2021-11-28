@@ -1,8 +1,12 @@
 package gamemechanics
 
 const (
-	CREATE_PAWN = "create"
-	DESTROY     = "destroy"
+	CREATE_PAWN    = "create_pawn"
+	FIRE_DEFLECTOR = "fire_deflector"
+)
+
+const (
+	DESTROY_PAWM = "destroy_pawn"
 )
 
 type GameEvent struct {
@@ -12,9 +16,9 @@ type GameEvent struct {
 	owner      string
 }
 
-func NewGameEvent(x int, y int, targetType string) GameEvent {
+func NewGameEvent(name string, x int, y int, targetType string) GameEvent {
 	return GameEvent{
-		name:       CREATE_PAWN,
+		name:       name,
 		position:   Position{X: x, Y: y},
 		targetType: targetType,
 		owner:      "anyone",

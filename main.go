@@ -70,14 +70,13 @@ func main() {
 			return err
 		}
 
-		event := gamemechanics.NewGameEvent(payload.X, payload.Y, payload.Variant)
+		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, payload.Variant)
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
 			return c.SendStatus(400)
 		}
 
 		defenition.Events = append(defenition.Events, event)
-		gameStorage.Set(payload.GameId, defenition)
 
 		gameBoard, err := gamemechanics.NewGameBoard(defenition)
 
@@ -85,7 +84,11 @@ func main() {
 			return err
 		}
 
-		deflections := gameBoard.GetDeflections(gamemechanics.Position{X: 0, Y: 0}, 0)
+		gameBoard, deflections := gamemechanics.ProcessDeflection(gameBoard)
+
+		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, "")
+		defenition.Events = append(defenition.Events, fireEvent)
+		gameStorage.Set(payload.GameId, defenition)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":   parseGameBoard(gameBoard),
@@ -104,7 +107,7 @@ func main() {
 			return err
 		}
 
-		event := gamemechanics.NewGameEvent(payload.X, payload.Y, payload.Variant)
+		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, payload.Variant)
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
 			return c.SendStatus(400)
@@ -118,7 +121,7 @@ func main() {
 			return err
 		}
 
-		deflections := gameBoard.GetDeflections(gamemechanics.Position{X: 0, Y: 0}, 0)
+		gameBoard, deflections := gamemechanics.ProcessDeflection(gameBoard)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":   parseGameBoard(gameBoard),
