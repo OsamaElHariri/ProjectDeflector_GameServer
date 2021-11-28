@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	gamemechanics "projectdeflector/game/game_mechanics"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,6 +12,26 @@ func main() {
 	app := fiber.New()
 
 	gameStorage := gamemechanics.NewStorage()
+
+	app.Get("/game/:gameId", func(c *fiber.Ctx) error {
+		gameId, err := strconv.Atoi(c.Params("gameId"))
+		if err != nil {
+			return err
+		}
+
+		defenition, ok := gameStorage.Get(gameId)
+		if !ok {
+			return c.SendStatus(400)
+		}
+
+		gameBoard, err := gamemechanics.NewGameBoard(defenition)
+
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(parseGameBoard(gameBoard))
+	})
 
 	app.Post("/game", func(c *fiber.Ctx) error {
 		payload := struct {
