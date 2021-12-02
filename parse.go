@@ -18,10 +18,11 @@ type Pawn struct {
 }
 
 type GameBoard struct {
-	XMin  int      `json:"xMin"`
-	XMax  int      `json:"xMax"`
-	Pawns [][]Pawn `json:"pawns"`
-	Turn  int      `json:"turn"`
+	XMin       int        `json:"xMin"`
+	XMax       int        `json:"xMax"`
+	Pawns      [][]Pawn   `json:"pawns"`
+	Turn       int        `json:"turn"`
+	ScoreBoard ScoreBoard `json:"scoreBoard"`
 }
 
 type Deflection struct {
@@ -33,6 +34,11 @@ type Deflection struct {
 type DeflectionEvent struct {
 	Name     string   `json:"name"`
 	Position Position `json:"position"`
+}
+
+type ScoreBoard struct {
+	Red  int `json:"red"`
+	Blue int `json:"blue"`
 }
 
 func parseDeflections(deflections []gamemechanics.Deflection) []Deflection {
@@ -72,10 +78,11 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 	}
 
 	return GameBoard{
-		XMin:  gameBoard.XMin,
-		XMax:  gameBoard.XMax,
-		Turn:  gameBoard.Turn,
-		Pawns: pawns,
+		XMin:       gameBoard.XMin,
+		XMax:       gameBoard.XMax,
+		Turn:       gameBoard.Turn,
+		Pawns:      pawns,
+		ScoreBoard: parseScoreBoard(gameBoard.ScoreBoard),
 	}
 }
 
@@ -91,4 +98,8 @@ func parsePawn(pawn gamemechanics.Pawn) Pawn {
 
 func parsePosition(position gamemechanics.Position) Position {
 	return Position{X: position.X, Y: position.Y}
+}
+
+func parseScoreBoard(scoreBoard gamemechanics.ScoreBoard) ScoreBoard {
+	return ScoreBoard{Red: scoreBoard.Red, Blue: scoreBoard.Blue}
 }

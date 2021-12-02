@@ -11,6 +11,11 @@ const (
 	RIGHT
 )
 
+const (
+	RED_SIDE  = LEFT
+	BLUE_SIDE = RIGHT
+)
+
 type GameBoardDefenition struct {
 	YMax   int
 	Events []GameEvent
@@ -22,6 +27,7 @@ type GameBoard struct {
 	XMin       int
 	XMax       int
 	Pawns      [][]Pawn
+	ScoreBoard ScoreBoard
 }
 
 type Deflection struct {
@@ -33,6 +39,11 @@ type Deflection struct {
 type DeflectionEvent struct {
 	Name     string
 	Position Position
+}
+
+type ScoreBoard struct {
+	Red  int
+	Blue int
 }
 
 func NewGameBoardDefinition() GameBoardDefenition {
@@ -49,6 +60,7 @@ func NewGameBoard(defenition GameBoardDefenition) (GameBoard, error) {
 		defenition: defenition,
 		Pawns:      make([][]Pawn, defenition.YMax),
 		Turn:       0,
+		ScoreBoard: ScoreBoard{},
 	}
 	for _, event := range defenition.Events {
 		gameBoard = ApplyEvent(gameBoard, event)
@@ -120,7 +132,7 @@ func addPawn(pawns [][]Pawn, event GameEvent, turn int) ([][]Pawn, error) {
 		Position:   event.position,
 		Name:       event.targetType,
 		TurnPlaced: turn,
-		Durability: 2,
+		Durability: 3,
 	}
 
 	index, err := getPawnIndex(pawns, event.position)
@@ -212,7 +224,7 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 	for i := 0; i < len(gameBoard.defenition.Events)*2; i++ {
 		pawn, err := gameBoard.getNextPawn(currentPosition, currentDirection)
 		if err != nil {
-			return gameBoard, deflections
+			break
 		}
 		currentPosition = pawn.Position
 		currentDirection = pawn.getDeflectedDirection(currentDirection)
@@ -237,5 +249,13 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 			Events:      events,
 		})
 	}
+
+	lastDirection := deflections[len(deflections)-1].ToDirection
+	if lastDirection == BLUE_SIDE {
+		gameBoard.ScoreBoard.Blue += 1
+	} else if lastDirection == RED_SIDE {
+		gameBoard.ScoreBoard.Red += 1
+	}
+
 	return gameBoard, deflections
 }
