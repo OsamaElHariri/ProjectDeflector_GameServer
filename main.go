@@ -52,7 +52,15 @@ func main() {
 			return err
 		}
 
-		return c.JSON(parseGameBoard(gameBoard))
+		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, 2)
+		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, 2)
+
+		return c.JSON(fiber.Map{
+			"gameBoard":    parseGameBoard(gameBoard),
+			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(gameBoard.Turn)),
+			"redVariants":  redVariants,
+			"blueVariants": blueVariants,
+		})
 	})
 
 	app.Delete("/game", func(c *fiber.Ctx) error {
@@ -61,22 +69,19 @@ func main() {
 
 	app.Post("/turn", func(c *fiber.Ctx) error {
 		payload := struct {
-			GameId  int    `json:"gameId"`
-			X       int    `json:"x"`
-			Y       int    `json:"y"`
-			Variant string `json:"variant"`
+			GameId     int    `json:"gameId"`
+			X          int    `json:"x"`
+			Y          int    `json:"y"`
+			PlayerSide string `json:"playerSide"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
 		}
 
-		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, payload.Variant)
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
 			return c.SendStatus(400)
 		}
-
-		defenition.Events = append(defenition.Events, event)
 
 		gameBoard, err := gamemechanics.NewGameBoard(defenition)
 
@@ -84,36 +89,51 @@ func main() {
 			return err
 		}
 
-		gameBoard, deflections := gamemechanics.ProcessDeflection(gameBoard)
+		turnsPlayed := gameBoard.GetTurnsPlayed(payload.PlayerSide)
 
-		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, "")
-		defenition.Events = append(defenition.Events, fireEvent)
-		gameStorage.Set(payload.GameId, defenition)
+		var playerId int
+		if payload.PlayerSide == "red" {
+			playerId = gamemechanics.RED_SIDE
+		} else {
+			playerId = gamemechanics.BLUE_SIDE
+		}
+
+		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, turnsPlayed+1)
+		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, variants[len(variants)-1])
+		gameBoard, _ = gamemechanics.AddEvent(gameBoard, event)
+
+		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, payload.PlayerSide)
+		gameBoard, deflections := gamemechanics.AddEvent(gameBoard, fireEvent)
+
+		gameStorage.Set(payload.GameId, gameBoard.GetDefenition())
+
+		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, gameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, gameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":   parseGameBoard(gameBoard),
-			"deflections": parseDeflections(deflections),
+			"gameBoard":    parseGameBoard(gameBoard),
+			"deflections":  parseDeflections(deflections),
+			"redVariants":  redVariants,
+			"blueVariants": blueVariants,
+			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(gameBoard.Turn)),
 		})
 	})
 
 	app.Post("/peek", func(c *fiber.Ctx) error {
 		payload := struct {
-			GameId  int    `json:"gameId"`
-			X       int    `json:"x"`
-			Y       int    `json:"y"`
-			Variant string `json:"variant"`
+			GameId     int    `json:"gameId"`
+			X          int    `json:"x"`
+			Y          int    `json:"y"`
+			PlayerSide string `json:"playerSide"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
 		}
 
-		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, payload.Variant)
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
 			return c.SendStatus(400)
 		}
-
-		defenition.Events = append(defenition.Events, event)
 
 		gameBoard, err := gamemechanics.NewGameBoard(defenition)
 
@@ -121,7 +141,19 @@ func main() {
 			return err
 		}
 
-		gameBoard, deflections := gamemechanics.ProcessDeflection(gameBoard)
+		var playerId int
+		if payload.PlayerSide == "red" {
+			playerId = gamemechanics.RED_SIDE
+		} else {
+			playerId = gamemechanics.BLUE_SIDE
+		}
+
+		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, gameBoard.Turn/2)
+		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, variants[len(variants)-1])
+		gameBoard, _ = gamemechanics.AddEvent(gameBoard, event)
+
+		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, "")
+		gameBoard, deflections := gamemechanics.AddEvent(gameBoard, fireEvent)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":   parseGameBoard(gameBoard),

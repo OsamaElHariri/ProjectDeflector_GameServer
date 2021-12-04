@@ -2,6 +2,7 @@ package gamemechanics
 
 import (
 	"errors"
+	"math/rand"
 )
 
 const (
@@ -63,10 +64,14 @@ func NewGameBoard(defenition GameBoardDefenition) (GameBoard, error) {
 		ScoreBoard: ScoreBoard{},
 	}
 	for _, event := range defenition.Events {
-		gameBoard = ApplyEvent(gameBoard, event)
+		gameBoard, _ = ApplyEvent(gameBoard, event)
 	}
 
 	return gameBoard, nil
+}
+
+func (gameBoard GameBoard) GetDefenition() GameBoardDefenition {
+	return gameBoard.defenition
 }
 
 func (gameBoard GameBoard) getPawn(position Position) (*Pawn, error) {
@@ -95,7 +100,14 @@ func isWithinBoard(pawns [][]Pawn, yCoord int) bool {
 	return yCoord >= 0 && yCoord < len(pawns)
 }
 
-func ApplyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
+func AddEvent(gameBoard GameBoard, event GameEvent) (GameBoard, []Deflection) {
+	gameBoard, deflections := ApplyEvent(gameBoard, event)
+	gameBoard.defenition.Events = append(gameBoard.defenition.Events, event)
+	return gameBoard, deflections
+}
+
+func ApplyEvent(gameBoard GameBoard, event GameEvent) (GameBoard, []Deflection) {
+	deflections := make([]Deflection, 0)
 	if event.name == CREATE_PAWN {
 		updatedPawns, err := addPawn(gameBoard.Pawns, event, gameBoard.Turn)
 		if err == nil {
@@ -105,9 +117,9 @@ func ApplyEvent(gameBoard GameBoard, event GameEvent) GameBoard {
 	}
 	if event.name == FIRE_DEFLECTOR {
 		gameBoard.Turn += 1
-		gameBoard, _ = ProcessDeflection(gameBoard)
+		gameBoard, deflections = ProcessDeflection(gameBoard)
 	}
-	return gameBoard
+	return gameBoard, deflections
 }
 
 func removePawn(pawns [][]Pawn, position Position) ([][]Pawn, error) {
@@ -258,4 +270,37 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 	}
 
 	return gameBoard, deflections
+}
+
+func GetPawnVariants(gameId int, player int, turns int) []string {
+	rand.Seed(int64(gameId) + int64(player))
+
+	variants := make([]string, turns)
+	for i := 0; i < turns; i++ {
+		rand := rand.Float64()
+		if rand < 0.5 {
+			variants[i] = SLASH
+		} else {
+			variants[i] = BACKSLASH
+		}
+	}
+	return variants
+}
+
+func GetPlayerTurn(turn int) int {
+	if turn%2 == 0 {
+		return RED_SIDE
+	} else {
+		return BLUE_SIDE
+	}
+}
+
+func (gameBoard GameBoard) GetTurnsPlayed(variant string) int {
+	count := 0
+	for i := 0; i < len(gameBoard.defenition.Events); i++ {
+		if gameBoard.defenition.Events[i].name == FIRE_DEFLECTOR && gameBoard.defenition.Events[i].targetType == variant {
+			count += 1
+		}
+	}
+	return count
 }

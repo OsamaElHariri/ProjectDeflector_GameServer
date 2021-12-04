@@ -103,3 +103,11 @@ func parsePosition(position gamemechanics.Position) Position {
 func parseScoreBoard(scoreBoard gamemechanics.ScoreBoard) ScoreBoard {
 	return ScoreBoard{Red: scoreBoard.Red, Blue: scoreBoard.Blue}
 }
+
+func parsePlayerTurn(player int) string {
+	if player == gamemechanics.RED_SIDE {
+		return "red"
+	} else {
+		return "blue"
+	}
+}
