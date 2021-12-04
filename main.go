@@ -42,9 +42,11 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		defenition := gamemechanics.NewGameBoardDefinition()
-
-		gameStorage.Set(payload.GameId, defenition)
+		defenition, ok := gameStorage.Get(payload.GameId)
+		if !ok {
+			defenition = gamemechanics.NewGameBoardDefinition()
+			gameStorage.Set(payload.GameId, defenition)
+		}
 
 		gameBoard, err := gamemechanics.NewGameBoard(defenition)
 
@@ -52,8 +54,8 @@ func main() {
 			return err
 		}
 
-		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, 2)
-		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, 2)
+		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, gameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, gameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":    parseGameBoard(gameBoard),
