@@ -18,10 +18,11 @@ func NewCreatePawnEvent(pos Position, targetType string, playerOwner string) Cre
 
 func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
 	newPawn := Pawn{
-		Position:   event.position,
-		Name:       event.targetType,
-		TurnPlaced: gameBoardInProcess.GameBoard.Turn,
-		Durability: 3,
+		Position:    event.position,
+		Name:        event.targetType,
+		TurnPlaced:  gameBoardInProcess.GameBoard.Turn,
+		Durability:  3,
+		PlayerOwner: event.playerOwner,
 	}
 	updatedPawns, err := addPawn(gameBoardInProcess.GameBoard.Pawns, newPawn)
 	if err != nil {
