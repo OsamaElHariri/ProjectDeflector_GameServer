@@ -10,11 +10,10 @@ type Position struct {
 }
 
 type Pawn struct {
-	Position      Position `json:"position"`
-	Name          string   `json:"name"`
-	TurnPlaced    int      `json:"turnPlaced"`
-	TurnDestroyed int      `json:"turnDestroyed"`
-	Durability    int      `json:"durability"`
+	Position    Position `json:"position"`
+	Name        string   `json:"name"`
+	Durability  int      `json:"durability"`
+	PlayerOwner string   `json:"playerOwner"`
 }
 
 type GameBoard struct {
@@ -73,7 +72,7 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 
 	for i := 0; i < len(gameBoard.Pawns); i++ {
 		for j := 0; j < len(gameBoard.Pawns[i]); j++ {
-			pawns[i] = append(pawns[i], parsePawn(gameBoard.Pawns[i][j]))
+			pawns[i] = append(pawns[i], parsePawn(*gameBoard.Pawns[i][j]))
 		}
 	}
 
@@ -88,11 +87,10 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 
 func parsePawn(pawn gamemechanics.Pawn) Pawn {
 	return Pawn{
-		Position:      parsePosition(pawn.Position),
-		Name:          pawn.Name,
-		TurnPlaced:    pawn.TurnPlaced,
-		TurnDestroyed: pawn.TurnDestroyed,
-		Durability:    pawn.Durability,
+		Position:    parsePosition(pawn.Position),
+		Name:        pawn.Name,
+		Durability:  pawn.Durability,
+		PlayerOwner: pawn.PlayerOwner,
 	}
 }
 

@@ -24,13 +24,13 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		gameBoard, err := gamemechanics.NewGameBoard(defenition)
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
 
 		if err != nil {
 			return err
 		}
 
-		return c.JSON(parseGameBoard(gameBoard))
+		return c.JSON(parseGameBoard(processedGameBoard.GameBoard))
 	})
 
 	app.Post("/game", func(c *fiber.Ctx) error {
@@ -48,18 +48,18 @@ func main() {
 			gameStorage.Set(payload.GameId, defenition)
 		}
 
-		gameBoard, err := gamemechanics.NewGameBoard(defenition)
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
 
 		if err != nil {
 			return err
 		}
 
-		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, gameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, gameBoard.GetTurnsPlayed("blue")+2)
+		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":    parseGameBoard(gameBoard),
-			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(gameBoard.Turn)),
+			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
+			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
 			"redVariants":  redVariants,
 			"blueVariants": blueVariants,
 		})
@@ -85,13 +85,13 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		gameBoard, err := gamemechanics.NewGameBoard(defenition)
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
 
 		if err != nil {
 			return err
 		}
 
-		turnsPlayed := gameBoard.GetTurnsPlayed(payload.PlayerSide)
+		turnsPlayed := processedGameBoard.GameBoard.GetTurnsPlayed(payload.PlayerSide)
 
 		var playerId int
 		if payload.PlayerSide == "red" {
@@ -101,23 +101,29 @@ func main() {
 		}
 
 		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, turnsPlayed+1)
-		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, variants[len(variants)-1])
-		gameBoard, _ = gamemechanics.AddEvent(gameBoard, event)
+		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), variants[len(variants)-1], payload.PlayerSide)
+		fireEvent := gamemechanics.NewFireDeflectorEvent()
+		var newEvents []gamemechanics.GameEvent
+		newEvents = append(newEvents, pawnEvent)
+		newEvents = append(newEvents, fireEvent)
 
-		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, payload.PlayerSide)
-		gameBoard, deflections := gamemechanics.AddEvent(gameBoard, fireEvent)
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
 
-		gameStorage.Set(payload.GameId, gameBoard.GetDefenition())
+		if err != nil {
+			return c.SendStatus(400)
+		}
 
-		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, gameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, gameBoard.GetTurnsPlayed("blue")+2)
+		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
+
+		redVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := gamemechanics.GetPawnVariants(payload.GameId, gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":    parseGameBoard(gameBoard),
-			"deflections":  parseDeflections(deflections),
+			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
+			"deflections":  parseDeflections(processedGameBoard.LastDeflections),
 			"redVariants":  redVariants,
 			"blueVariants": blueVariants,
-			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(gameBoard.Turn)),
+			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
 		})
 	})
 
@@ -137,13 +143,13 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		gameBoard, err := gamemechanics.NewGameBoard(defenition)
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
 
 		if err != nil {
 			return err
 		}
 
-		turnsPlayed := gameBoard.GetTurnsPlayed(payload.PlayerSide)
+		turnsPlayed := processedGameBoard.GameBoard.GetTurnsPlayed(payload.PlayerSide)
 
 		var playerId int
 		if payload.PlayerSide == "red" {
@@ -153,15 +159,20 @@ func main() {
 		}
 
 		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, turnsPlayed+1)
-		event := gamemechanics.NewGameEvent(gamemechanics.CREATE_PAWN, payload.X, payload.Y, variants[len(variants)-1])
-		gameBoard, _ = gamemechanics.AddEvent(gameBoard, event)
+		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), variants[len(variants)-1], payload.PlayerSide)
+		fireEvent := gamemechanics.NewFireDeflectorEvent()
+		var evts []gamemechanics.GameEvent
+		evts = append(evts, pawnEvent)
+		evts = append(evts, fireEvent)
 
-		fireEvent := gamemechanics.NewGameEvent(gamemechanics.FIRE_DEFLECTOR, 0, 0, payload.PlayerSide)
-		gameBoard, deflections := gamemechanics.AddEvent(gameBoard, fireEvent)
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, evts)
+		if err != nil {
+			return c.SendStatus(400)
+		}
 
 		return c.JSON(fiber.Map{
-			"gameBoard":   parseGameBoard(gameBoard),
-			"deflections": parseDeflections(deflections),
+			"gameBoard":   parseGameBoard(processedGameBoard.GameBoard),
+			"deflections": parseDeflections(processedGameBoard.LastDeflections),
 		})
 	})
 

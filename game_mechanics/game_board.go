@@ -17,6 +17,10 @@ const (
 	BLUE_SIDE = RIGHT
 )
 
+const (
+	DESTROY_PAWM = "destroy_pawn"
+)
+
 type GameBoardDefenition struct {
 	YMax   int
 	Events []GameEvent
@@ -27,7 +31,7 @@ type GameBoard struct {
 	defenition GameBoardDefenition
 	XMin       int
 	XMax       int
-	Pawns      [][]Pawn
+	Pawns      [][]*Pawn
 	ScoreBoard ScoreBoard
 }
 
@@ -50,24 +54,36 @@ type ScoreBoard struct {
 func NewGameBoardDefinition() GameBoardDefenition {
 	definition := GameBoardDefenition{
 		YMax:   5,
-		Events: []GameEvent{},
+		Events: make([]GameEvent, 0),
 	}
 
 	return definition
 }
 
-func NewGameBoard(defenition GameBoardDefenition) (GameBoard, error) {
+func NewGameBoard(defenition GameBoardDefenition) (ProcessedGameBoard, error) {
 	gameBoard := GameBoard{
-		defenition: defenition,
-		Pawns:      make([][]Pawn, defenition.YMax),
+		defenition: NewGameBoardDefinition(),
+		Pawns:      make([][]*Pawn, defenition.YMax),
 		Turn:       0,
 		ScoreBoard: ScoreBoard{},
 	}
-	for _, event := range defenition.Events {
-		gameBoard, _ = ApplyEvent(gameBoard, event)
+	gameBoardInProcess := ProcessedGameBoard{
+		GameBoard: gameBoard,
 	}
+	return ProcessEvents(gameBoardInProcess, defenition.Events)
+}
 
-	return gameBoard, nil
+func ProcessEvents(gameBoardInProcess ProcessedGameBoard, events []GameEvent) (ProcessedGameBoard, error) {
+	for _, event := range events {
+		result, err := event.UpdateGameBoard(gameBoardInProcess)
+		if err != nil {
+			return gameBoardInProcess, err
+		}
+		gameBoardInProcess = result
+	}
+	gameBoardInProcess.GameBoard.defenition.Events = append(gameBoardInProcess.GameBoard.defenition.Events, events...)
+
+	return gameBoardInProcess, nil
 }
 
 func (gameBoard GameBoard) GetDefenition() GameBoardDefenition {
@@ -79,10 +95,10 @@ func (gameBoard GameBoard) getPawn(position Position) (*Pawn, error) {
 	if err != nil {
 		return &Pawn{}, err
 	}
-	return &gameBoard.Pawns[position.Y][index], nil
+	return gameBoard.Pawns[position.Y][index], nil
 }
 
-func getPawnIndex(pawns [][]Pawn, position Position) (int, error) {
+func getPawnIndex(pawns [][]*Pawn, position Position) (int, error) {
 	if !isWithinBoard(pawns, position.Y) {
 		return 0, errors.New("out of bounds")
 	}
@@ -96,33 +112,11 @@ func getPawnIndex(pawns [][]Pawn, position Position) (int, error) {
 	return 0, errors.New("empty position")
 }
 
-func isWithinBoard(pawns [][]Pawn, yCoord int) bool {
+func isWithinBoard(pawns [][]*Pawn, yCoord int) bool {
 	return yCoord >= 0 && yCoord < len(pawns)
 }
 
-func AddEvent(gameBoard GameBoard, event GameEvent) (GameBoard, []Deflection) {
-	gameBoard, deflections := ApplyEvent(gameBoard, event)
-	gameBoard.defenition.Events = append(gameBoard.defenition.Events, event)
-	return gameBoard, deflections
-}
-
-func ApplyEvent(gameBoard GameBoard, event GameEvent) (GameBoard, []Deflection) {
-	deflections := make([]Deflection, 0)
-	if event.name == CREATE_PAWN {
-		updatedPawns, err := addPawn(gameBoard.Pawns, event, gameBoard.Turn)
-		if err == nil {
-			gameBoard.Pawns = updatedPawns
-
-		}
-	}
-	if event.name == FIRE_DEFLECTOR {
-		gameBoard.Turn += 1
-		gameBoard, deflections = ProcessDeflection(gameBoard)
-	}
-	return gameBoard, deflections
-}
-
-func removePawn(pawns [][]Pawn, position Position) ([][]Pawn, error) {
+func removePawn(pawns [][]*Pawn, position Position) ([][]*Pawn, error) {
 	if !isWithinBoard(pawns, position.Y) {
 		return pawns, errors.New("invalid pawn position")
 	}
@@ -135,23 +129,16 @@ func removePawn(pawns [][]Pawn, position Position) ([][]Pawn, error) {
 	return pawns, nil
 }
 
-func addPawn(pawns [][]Pawn, event GameEvent, turn int) ([][]Pawn, error) {
-	if !isWithinBoard(pawns, event.position.Y) {
+func addPawn(pawns [][]*Pawn, newPawn Pawn) ([][]*Pawn, error) {
+	if !isWithinBoard(pawns, newPawn.Position.Y) {
 		return pawns, errors.New("invalid pawn position")
 	}
 
-	newPawn := Pawn{
-		Position:   event.position,
-		Name:       event.targetType,
-		TurnPlaced: turn,
-		Durability: 3,
-	}
-
-	index, err := getPawnIndex(pawns, event.position)
+	index, err := getPawnIndex(pawns, newPawn.Position)
 	if err == nil {
-		pawns[event.position.Y][index] = newPawn
+		pawns[newPawn.Position.Y][index] = &newPawn
 	} else {
-		pawns[event.position.Y] = append(pawns[event.position.Y], newPawn)
+		pawns[newPawn.Position.Y] = append(pawns[newPawn.Position.Y], &newPawn)
 	}
 
 	return pawns, nil
@@ -193,7 +180,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 			}
 		}
 		if indexNearest >= 0 {
-			return &gameBoard.Pawns[currentPosition.Y][indexNearest], nil
+			return gameBoard.Pawns[currentPosition.Y][indexNearest], nil
 		} else {
 			return &Pawn{}, errors.New("no next pawn")
 		}
@@ -209,7 +196,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 			}
 		}
 		if indexNearest >= 0 {
-			return &gameBoard.Pawns[currentPosition.Y][indexNearest], nil
+			return gameBoard.Pawns[currentPosition.Y][indexNearest], nil
 		} else {
 			return &Pawn{}, errors.New("no next pawn")
 		}
@@ -231,9 +218,9 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 	}
 
 	// being stuck in an infinite loop is not possible when given valid inputs.
-	// an upperbound of len(events) * 2 protects against the possibility of
+	// an upperbound of (100 + gameBoard.Turn)*2 protects against the possibility of
 	// an infinite loop in case unexpected inputs are passed in
-	for i := 0; i < len(gameBoard.defenition.Events)*2; i++ {
+	for i := 0; i < (100+gameBoard.Turn)*2; i++ {
 		pawn, err := gameBoard.getNextPawn(currentPosition, currentDirection)
 		if err != nil {
 			break
@@ -298,7 +285,7 @@ func GetPlayerTurn(turn int) int {
 func (gameBoard GameBoard) GetTurnsPlayed(variant string) int {
 	count := 0
 	for i := 0; i < len(gameBoard.defenition.Events); i++ {
-		if gameBoard.defenition.Events[i].name == FIRE_DEFLECTOR && gameBoard.defenition.Events[i].targetType == variant {
+		if gameBoard.defenition.Events[i].DoesConsumeVariant(variant) {
 			count += 1
 		}
 	}

@@ -5,6 +5,10 @@ type Position struct {
 	Y int
 }
 
+func NewPosition(x int, y int) Position {
+	return position(x, y)
+}
+
 func position(x int, y int) Position {
 	return Position{
 		X: x,

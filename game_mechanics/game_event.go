@@ -5,22 +5,12 @@ const (
 	FIRE_DEFLECTOR = "fire_deflector"
 )
 
-const (
-	DESTROY_PAWM = "destroy_pawn"
-)
-
-type GameEvent struct {
-	name       string
-	position   Position
-	targetType string
-	owner      string
+type ProcessedGameBoard struct {
+	GameBoard       GameBoard
+	LastDeflections []Deflection
 }
 
-func NewGameEvent(name string, x int, y int, targetType string) GameEvent {
-	return GameEvent{
-		name:       name,
-		position:   Position{X: x, Y: y},
-		targetType: targetType,
-		owner:      "anyone",
-	}
+type GameEvent interface {
+	UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error)
+	DoesConsumeVariant(playerId string) bool
 }
