@@ -6,8 +6,9 @@ const (
 )
 
 type ProcessedGameBoard struct {
-	GameBoard       GameBoard
-	LastDeflections []Deflection
+	GameBoard            GameBoard
+	ProcessingEventIndex int
+	LastDeflections      []Deflection
 }
 
 type GameEvent interface {

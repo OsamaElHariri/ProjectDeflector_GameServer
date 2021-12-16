@@ -22,6 +22,7 @@ const (
 )
 
 type GameBoardDefenition struct {
+	GameId int
 	YMax   int
 	Events []GameEvent
 }
@@ -51,8 +52,9 @@ type ScoreBoard struct {
 	Blue int
 }
 
-func NewGameBoardDefinition() GameBoardDefenition {
+func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 	definition := GameBoardDefenition{
+		GameId: gameId,
 		YMax:   5,
 		Events: make([]GameEvent, 0),
 	}
@@ -62,26 +64,29 @@ func NewGameBoardDefinition() GameBoardDefenition {
 
 func NewGameBoard(defenition GameBoardDefenition) (ProcessedGameBoard, error) {
 	gameBoard := GameBoard{
-		defenition: NewGameBoardDefinition(),
+		defenition: NewGameBoardDefinition(defenition.GameId),
 		Pawns:      make([][]*Pawn, defenition.YMax),
 		Turn:       0,
 		ScoreBoard: ScoreBoard{},
 	}
 	gameBoardInProcess := ProcessedGameBoard{
-		GameBoard: gameBoard,
+		GameBoard:            gameBoard,
+		ProcessingEventIndex: 0,
 	}
 	return ProcessEvents(gameBoardInProcess, defenition.Events)
 }
 
 func ProcessEvents(gameBoardInProcess ProcessedGameBoard, events []GameEvent) (ProcessedGameBoard, error) {
-	for _, event := range events {
+	currentIndex := gameBoardInProcess.ProcessingEventIndex
+	gameBoardInProcess.GameBoard.defenition.Events = append(gameBoardInProcess.GameBoard.defenition.Events, events...)
+	for i, event := range events {
+		gameBoardInProcess.ProcessingEventIndex = currentIndex + i
 		result, err := event.UpdateGameBoard(gameBoardInProcess)
 		if err != nil {
 			return gameBoardInProcess, err
 		}
 		gameBoardInProcess = result
 	}
-	gameBoardInProcess.GameBoard.defenition.Events = append(gameBoardInProcess.GameBoard.defenition.Events, events...)
 
 	return gameBoardInProcess, nil
 }
@@ -283,9 +288,13 @@ func GetPlayerTurn(turn int) int {
 }
 
 func (gameBoard GameBoard) GetTurnsPlayed(variant string) int {
+	return getTurnsPlayed(gameBoard.defenition.Events, variant)
+}
+
+func getTurnsPlayed(events []GameEvent, variant string) int {
 	count := 0
-	for i := 0; i < len(gameBoard.defenition.Events); i++ {
-		if gameBoard.defenition.Events[i].DoesConsumeVariant(variant) {
+	for i := 0; i < len(events); i++ {
+		if events[i].DoesConsumeVariant(variant) {
 			count += 1
 		}
 	}

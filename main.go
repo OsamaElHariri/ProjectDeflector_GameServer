@@ -44,7 +44,7 @@ func main() {
 
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
-			defenition = gamemechanics.NewGameBoardDefinition()
+			defenition = gamemechanics.NewGameBoardDefinition(payload.GameId)
 			gameStorage.Set(payload.GameId, defenition)
 		}
 
@@ -91,17 +91,7 @@ func main() {
 			return err
 		}
 
-		turnsPlayed := processedGameBoard.GameBoard.GetTurnsPlayed(payload.PlayerSide)
-
-		var playerId int
-		if payload.PlayerSide == "red" {
-			playerId = gamemechanics.RED_SIDE
-		} else {
-			playerId = gamemechanics.BLUE_SIDE
-		}
-
-		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, turnsPlayed+1)
-		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), variants[len(variants)-1], payload.PlayerSide)
+		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var newEvents []gamemechanics.GameEvent
 		newEvents = append(newEvents, pawnEvent)
@@ -149,17 +139,7 @@ func main() {
 			return err
 		}
 
-		turnsPlayed := processedGameBoard.GameBoard.GetTurnsPlayed(payload.PlayerSide)
-
-		var playerId int
-		if payload.PlayerSide == "red" {
-			playerId = gamemechanics.RED_SIDE
-		} else {
-			playerId = gamemechanics.BLUE_SIDE
-		}
-
-		variants := gamemechanics.GetPawnVariants(payload.GameId, playerId, turnsPlayed+1)
-		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), variants[len(variants)-1], payload.PlayerSide)
+		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var evts []gamemechanics.GameEvent
 		evts = append(evts, pawnEvent)
