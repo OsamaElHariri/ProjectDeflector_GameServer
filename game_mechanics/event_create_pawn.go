@@ -24,7 +24,7 @@ func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 		playerId = BLUE_SIDE
 	}
 
-	variant := gameBoardInProcess.VariantFactory.Generate(gameBoardInProcess.GameBoard.defenition.GameId+playerId, turnsPlayed+1)
+	variant := gameBoardInProcess.VariantFactory.Generate(gameBoardInProcess.GameBoard.defenition.Id+playerId, turnsPlayed+1)
 
 	newPawn := Pawn{
 		Position:    event.position,

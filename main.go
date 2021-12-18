@@ -55,7 +55,7 @@ func main() {
 		}
 
 		redVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
@@ -75,6 +75,7 @@ func main() {
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
+			SkipPawn   bool   `json:"skipPawn"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -94,6 +95,11 @@ func main() {
 		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var newEvents []gamemechanics.GameEvent
+
+		if payload.SkipPawn {
+			newEvents = append(newEvents, gamemechanics.NewSkipPawnEvent(payload.PlayerSide))
+		}
+
 		newEvents = append(newEvents, pawnEvent)
 		newEvents = append(newEvents, fireEvent)
 
@@ -106,7 +112,7 @@ func main() {
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
 
 		redVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
@@ -123,11 +129,11 @@ func main() {
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
+			SkipPawn   bool   `json:"skipPawn"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
 		}
-
 		defenition, ok := gameStorage.Get(payload.GameId)
 		if !ok {
 			return c.SendStatus(400)
@@ -141,11 +147,17 @@ func main() {
 
 		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
-		var evts []gamemechanics.GameEvent
-		evts = append(evts, pawnEvent)
-		evts = append(evts, fireEvent)
+		var newEvents []gamemechanics.GameEvent
 
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, evts)
+		if payload.SkipPawn {
+			newEvents = append(newEvents, gamemechanics.NewSkipPawnEvent(payload.PlayerSide))
+		}
+
+		newEvents = append(newEvents, pawnEvent)
+		newEvents = append(newEvents, fireEvent)
+
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
+
 		if err != nil {
 			return c.SendStatus(400)
 		}

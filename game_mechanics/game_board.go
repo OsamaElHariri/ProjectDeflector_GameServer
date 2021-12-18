@@ -21,7 +21,7 @@ const (
 )
 
 type GameBoardDefenition struct {
-	GameId int
+	Id     int
 	YMax   int
 	XMax   int
 	Events []GameEvent
@@ -52,7 +52,7 @@ type ScoreBoard struct {
 
 func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 	definition := GameBoardDefenition{
-		GameId: gameId,
+		Id:     gameId,
 		YMax:   2,
 		XMax:   4,
 		Events: make([]GameEvent, 0),
@@ -76,7 +76,7 @@ func newGameBoard(defenition GameBoardDefenition, variantFactory PawnVariantFact
 	}
 
 	gameBoard := GameBoard{
-		defenition: NewGameBoardDefinition(defenition.GameId),
+		defenition: NewGameBoardDefinition(defenition.Id),
 		Pawns:      pawns,
 		Turn:       0,
 		ScoreBoard: ScoreBoard{},
@@ -90,7 +90,7 @@ func newGameBoard(defenition GameBoardDefenition, variantFactory PawnVariantFact
 }
 
 func ProcessEvents(gameBoardInProcess ProcessedGameBoard, events []GameEvent) (ProcessedGameBoard, error) {
-	currentIndex := gameBoardInProcess.ProcessingEventIndex
+	currentIndex := len(gameBoardInProcess.GameBoard.defenition.Events)
 	gameBoardInProcess.GameBoard.defenition.Events = append(gameBoardInProcess.GameBoard.defenition.Events, events...)
 	for i, event := range events {
 		gameBoardInProcess.ProcessingEventIndex = currentIndex + i

@@ -3,6 +3,7 @@ package gamemechanics
 const (
 	CREATE_PAWN    = "create_pawn"
 	FIRE_DEFLECTOR = "fire_deflector"
+	SKIP_PAWN      = "skip_pawn"
 )
 
 type ProcessedGameBoard struct {

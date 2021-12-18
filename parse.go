@@ -17,6 +17,7 @@ type Pawn struct {
 }
 
 type GameBoard struct {
+	Id         int        `json:"id"`
 	XMin       int        `json:"xMin"`
 	XMax       int        `json:"xMax"`
 	YMin       int        `json:"yMin"`
@@ -83,6 +84,7 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 	}
 
 	return GameBoard{
+		Id:         gameBoard.GetDefenition().Id,
 		XMax:       gameBoard.GetDefenition().XMax,
 		XMin:       0,
 		YMax:       gameBoard.GetDefenition().YMax,
