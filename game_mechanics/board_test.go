@@ -2,14 +2,27 @@ package gamemechanics
 
 import "testing"
 
+type PredictableVariantFactory struct {
+	variants map[int][]string
+}
+
+func (factory PredictableVariantFactory) Generate(seed int, turns int) []string {
+	return factory.variants[seed][0:turns]
+}
+
 func TestNewGameBoard(t *testing.T) {
 
-	processedGameBoard, err := NewGameBoard(GameBoardDefenition{
+	processedGameBoard, err := newGameBoard(GameBoardDefenition{
 		YMax: 5,
 		Events: []GameEvent{
-			NewCreatePawnEvent(position(1, 1), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(1, 1), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(500, 2), BACKSLASH, "red"),
+			NewCreatePawnEvent(position(1, 1), "red"),
+			NewCreatePawnEvent(position(1, 1), "blue"),
+			NewCreatePawnEvent(position(500, 2), "red"),
+		},
+	}, PredictableVariantFactory{
+		variants: map[int][]string{
+			RED_SIDE:  {BACKSLASH, BACKSLASH, BACKSLASH},
+			BLUE_SIDE: {BACKSLASH, BACKSLASH, BACKSLASH},
 		},
 	})
 	if err != nil || len(processedGameBoard.GameBoard.Pawns) < 5 || len(processedGameBoard.GameBoard.Pawns[1]) < 1 {
@@ -39,14 +52,19 @@ func TestNewGameBoard(t *testing.T) {
 }
 
 func TestPawnTraversal(t *testing.T) {
-	processedGameBoard, err := NewGameBoard(GameBoardDefenition{
+	processedGameBoard, err := newGameBoard(GameBoardDefenition{
 		YMax: 5,
 		Events: []GameEvent{
-			NewCreatePawnEvent(position(1, 1), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(1, 4), SLASH, "red"),
-			NewCreatePawnEvent(position(7, 4), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(3, 4), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(-1, 4), BACKSLASH, "red"),
+			NewCreatePawnEvent(position(1, 1), "red"),
+			NewCreatePawnEvent(position(1, 4), "blue"),
+			NewCreatePawnEvent(position(7, 4), "red"),
+			NewCreatePawnEvent(position(3, 4), "blue"),
+			NewCreatePawnEvent(position(-1, 4), "red"),
+		},
+	}, PredictableVariantFactory{
+		variants: map[int][]string{
+			RED_SIDE:  {BACKSLASH, BACKSLASH, BACKSLASH},
+			BLUE_SIDE: {SLASH, BACKSLASH, BACKSLASH},
 		},
 	})
 
@@ -118,11 +136,16 @@ func TestPawnTraversal(t *testing.T) {
 }
 
 func TestGetFinalDirection(t *testing.T) {
-	processedGameBoard, err := NewGameBoard(GameBoardDefenition{
+	processedGameBoard, err := newGameBoard(GameBoardDefenition{
 		YMax: 5,
 		Events: []GameEvent{
-			NewCreatePawnEvent(position(0, 1), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(-2, 1), SLASH, "red"),
+			NewCreatePawnEvent(position(0, 1), "red"),
+			NewCreatePawnEvent(position(-2, 1), "blue"),
+		},
+	}, PredictableVariantFactory{
+		variants: map[int][]string{
+			RED_SIDE:  {BACKSLASH},
+			BLUE_SIDE: {SLASH},
 		},
 	})
 
@@ -135,13 +158,18 @@ func TestGetFinalDirection(t *testing.T) {
 		t.Errorf("Wrong simple final direction %d", deflections[len(deflections)-1].ToDirection)
 	}
 
-	processedGameBoard, err = NewGameBoard(GameBoardDefenition{
+	processedGameBoard, err = newGameBoard(GameBoardDefenition{
 		YMax: 5,
 		Events: []GameEvent{
-			NewCreatePawnEvent(position(0, 1), SLASH, "red"),
-			NewCreatePawnEvent(position(1, 1), SLASH, "red"),
-			NewCreatePawnEvent(position(1, 2), BACKSLASH, "red"),
-			NewCreatePawnEvent(position(0, 2), SLASH, "red"),
+			NewCreatePawnEvent(position(0, 1), "red"),
+			NewCreatePawnEvent(position(1, 1), "blue"),
+			NewCreatePawnEvent(position(1, 2), "red"),
+			NewCreatePawnEvent(position(0, 2), "blue"),
+		},
+	}, PredictableVariantFactory{
+		variants: map[int][]string{
+			RED_SIDE:  {SLASH, BACKSLASH},
+			BLUE_SIDE: {SLASH, SLASH},
 		},
 	})
 

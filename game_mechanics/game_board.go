@@ -2,7 +2,6 @@ package gamemechanics
 
 import (
 	"errors"
-	"math/rand"
 )
 
 const (
@@ -63,6 +62,10 @@ func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 }
 
 func NewGameBoard(defenition GameBoardDefenition) (ProcessedGameBoard, error) {
+	return newGameBoard(defenition, RandomVariantFactory{})
+}
+
+func newGameBoard(defenition GameBoardDefenition, variantFactory PawnVariantFactory) (ProcessedGameBoard, error) {
 	gameBoard := GameBoard{
 		defenition: NewGameBoardDefinition(defenition.GameId),
 		Pawns:      make([][]*Pawn, defenition.YMax),
@@ -72,6 +75,7 @@ func NewGameBoard(defenition GameBoardDefenition) (ProcessedGameBoard, error) {
 	gameBoardInProcess := ProcessedGameBoard{
 		GameBoard:            gameBoard,
 		ProcessingEventIndex: 0,
+		VariantFactory:       variantFactory,
 	}
 	return ProcessEvents(gameBoardInProcess, defenition.Events)
 }
@@ -262,21 +266,6 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 	}
 
 	return gameBoard, deflections
-}
-
-func GetPawnVariants(gameId int, player int, turns int) []string {
-	rand.Seed(int64(gameId) + int64(player))
-
-	variants := make([]string, turns)
-	for i := 0; i < turns; i++ {
-		rand := rand.Float64()
-		if rand < 0.5 {
-			variants[i] = SLASH
-		} else {
-			variants[i] = BACKSLASH
-		}
-	}
-	return variants
 }
 
 func GetPlayerTurn(turn int) int {
