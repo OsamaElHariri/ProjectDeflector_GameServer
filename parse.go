@@ -19,6 +19,8 @@ type Pawn struct {
 type GameBoard struct {
 	XMin       int        `json:"xMin"`
 	XMax       int        `json:"xMax"`
+	YMin       int        `json:"yMin"`
+	YMax       int        `json:"yMax"`
 	Pawns      [][]Pawn   `json:"pawns"`
 	Turn       int        `json:"turn"`
 	ScoreBoard ScoreBoard `json:"scoreBoard"`
@@ -72,13 +74,19 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 
 	for i := 0; i < len(gameBoard.Pawns); i++ {
 		for j := 0; j < len(gameBoard.Pawns[i]); j++ {
-			pawns[i] = append(pawns[i], parsePawn(*gameBoard.Pawns[i][j]))
+			if gameBoard.Pawns[i][j] != nil {
+				pawns[i] = append(pawns[i], parsePawn(*gameBoard.Pawns[i][j]))
+			} else {
+				pawns[i] = append(pawns[i], Pawn{})
+			}
 		}
 	}
 
 	return GameBoard{
-		XMin:       gameBoard.XMin,
-		XMax:       gameBoard.XMax,
+		XMax:       gameBoard.GetDefenition().XMax,
+		XMin:       0,
+		YMax:       gameBoard.GetDefenition().YMax,
+		YMin:       0,
 		Turn:       gameBoard.Turn,
 		Pawns:      pawns,
 		ScoreBoard: parseScoreBoard(gameBoard.ScoreBoard),
