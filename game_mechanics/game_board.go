@@ -2,6 +2,7 @@ package gamemechanics
 
 import (
 	"errors"
+	"strconv"
 )
 
 const (
@@ -265,4 +266,8 @@ func getTurnsPlayed(events []GameEvent, variant string) int {
 		}
 	}
 	return count
+}
+
+func (gameBoard GameBoard) GetPlayerDigest(playerId string) string {
+	return strconv.Itoa(gameBoard.defenition.Id) + playerId
 }

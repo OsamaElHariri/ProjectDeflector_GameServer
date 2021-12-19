@@ -17,14 +17,7 @@ func NewCreatePawnEvent(pos Position, playerOwner string) CreatePawnEvent {
 func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
 	turnsPlayed := getTurnsPlayed(gameBoardInProcess.GameBoard.defenition.Events[0:gameBoardInProcess.ProcessingEventIndex], event.playerOwner)
 
-	var playerId int
-	if event.playerOwner == "red" {
-		playerId = RED_SIDE
-	} else {
-		playerId = BLUE_SIDE
-	}
-
-	variant := gameBoardInProcess.VariantFactory.Generate(gameBoardInProcess.GameBoard.defenition.Id+playerId, turnsPlayed+1)
+	variant := gameBoardInProcess.VariantFactory.Generate(gameBoardInProcess.GameBoard.GetPlayerDigest(event.playerOwner), turnsPlayed+1)
 
 	newPawn := Pawn{
 		Position:    event.position,

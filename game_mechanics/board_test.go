@@ -5,11 +5,11 @@ import (
 )
 
 type PredictableVariantFactory struct {
-	variants map[int][]string
+	variants map[string][]string
 }
 
-func (factory PredictableVariantFactory) Generate(seed int, turns int) []string {
-	return factory.variants[seed][0:turns]
+func (factory PredictableVariantFactory) Generate(str string, turns int) []string {
+	return factory.variants[str][0:turns]
 }
 
 func TestNewGameBoard(t *testing.T) {
@@ -139,9 +139,9 @@ func TestGetFinalDirection(t *testing.T) {
 			NewCreatePawnEvent(position(2, 1), "blue"),
 		},
 	}, PredictableVariantFactory{
-		variants: map[int][]string{
-			RED_SIDE:  {BACKSLASH, SLASH, SLASH},
-			BLUE_SIDE: {BACKSLASH, BACKSLASH, SLASH},
+		variants: map[string][]string{
+			"0red":  {BACKSLASH, SLASH, SLASH},
+			"0blue": {BACKSLASH, BACKSLASH, SLASH},
 		},
 	})
 

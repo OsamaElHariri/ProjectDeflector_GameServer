@@ -54,8 +54,8 @@ func main() {
 			return err
 		}
 
-		redVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		redVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
@@ -111,8 +111,8 @@ func main() {
 
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
 
-		redVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.RED_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(payload.GameId+gamemechanics.BLUE_SIDE, processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		redVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
 
 		return c.JSON(fiber.Map{
 			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
