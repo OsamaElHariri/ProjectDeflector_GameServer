@@ -11,11 +11,11 @@ func NewFireDeflectorEvent() FireDeflectorEvent {
 }
 
 func (event FireDeflectorEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
-	gameBoardInProcess.GameBoard.Turn += 1
-
-	gameBoard, deflections := ProcessDeflection(gameBoardInProcess.GameBoard)
+	deflectionSource := gameBoardInProcess.VarianceFactory.GenerateDeflectionSource(gameBoardInProcess.GameBoard, gameBoardInProcess.GameBoard.Turn)
+	gameBoard, deflections := ProcessDeflection(gameBoardInProcess.GameBoard, deflectionSource)
 	gameBoardInProcess.GameBoard = gameBoard
 	gameBoardInProcess.LastDeflections = deflections
+	gameBoardInProcess.GameBoard.Turn += 1
 
 	return gameBoardInProcess, nil
 }

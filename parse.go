@@ -4,6 +4,11 @@ import (
 	gamemechanics "projectdeflector/game/game_mechanics"
 )
 
+type DirectoedPosition struct {
+	Position  Position `json:"position"`
+	Direction int      `json:"direction"`
+}
+
 type Position struct {
 	X int `json:"x"`
 	Y int `json:"y"`
@@ -117,5 +122,12 @@ func parsePlayerTurn(player int) string {
 		return "red"
 	} else {
 		return "blue"
+	}
+}
+
+func parseDirectedPosition(directed gamemechanics.DirectedPosition) DirectoedPosition {
+	return DirectoedPosition{
+		Position:  parsePosition(directed.Position),
+		Direction: directed.Direction,
 	}
 }

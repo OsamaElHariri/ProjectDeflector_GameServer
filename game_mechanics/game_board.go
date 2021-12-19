@@ -51,6 +51,11 @@ type ScoreBoard struct {
 	Blue int
 }
 
+type DirectedPosition struct {
+	Position  Position
+	Direction int
+}
+
 func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 	definition := GameBoardDefenition{
 		Id:     gameId,
@@ -63,10 +68,10 @@ func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 }
 
 func NewGameBoard(defenition GameBoardDefenition) (ProcessedGameBoard, error) {
-	return newGameBoard(defenition, RandomVariantFactory{})
+	return newGameBoard(defenition, RandomVarianceFactory{})
 }
 
-func newGameBoard(defenition GameBoardDefenition, variantFactory PawnVariantFactory) (ProcessedGameBoard, error) {
+func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactory) (ProcessedGameBoard, error) {
 	height := defenition.YMax + 1
 	width := defenition.XMax + 1
 
@@ -85,7 +90,7 @@ func newGameBoard(defenition GameBoardDefenition, variantFactory PawnVariantFact
 	gameBoardInProcess := ProcessedGameBoard{
 		GameBoard:            gameBoard,
 		ProcessingEventIndex: 0,
-		VariantFactory:       variantFactory,
+		VarianceFactory:      varianceFactory,
 	}
 	return ProcessEvents(gameBoardInProcess, defenition.Events)
 }
@@ -190,8 +195,8 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 }
 
-func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
-	currentPosition, currentDirection := GetDeflectorSource(gameBoard, gameBoard.Turn)
+func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard, []Deflection) {
+	currentPosition, currentDirection := current.Position, current.Direction
 	deflections := []Deflection{
 		{
 			Position:    currentPosition,
@@ -240,10 +245,6 @@ func ProcessDeflection(gameBoard GameBoard) (GameBoard, []Deflection) {
 	}
 
 	return gameBoard, deflections
-}
-
-func GetDeflectorSource(gameBoard GameBoard, turn int) (Position, int) {
-	return position(gameBoard.defenition.XMax/2, -1), UP
 }
 
 func GetPlayerTurn(turn int) int {

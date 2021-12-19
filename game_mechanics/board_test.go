@@ -4,12 +4,19 @@ import (
 	"testing"
 )
 
-type PredictableVariantFactory struct {
+type PredictableVarianceFactory struct {
 	variants map[string][]string
 }
 
-func (factory PredictableVariantFactory) Generate(str string, turns int) []string {
+func (factory PredictableVarianceFactory) GeneratePawnVariant(str string, turns int) []string {
 	return factory.variants[str][0:turns]
+}
+
+func (factory PredictableVarianceFactory) GenerateDeflectionSource(gameBoard GameBoard, turn int) DirectedPosition {
+	return DirectedPosition{
+		Position:  position(gameBoard.defenition.XMax/2, -1),
+		Direction: UP,
+	}
 }
 
 func TestNewGameBoard(t *testing.T) {
@@ -137,8 +144,9 @@ func TestGetFinalDirection(t *testing.T) {
 			NewCreatePawnEvent(position(3, 2), "blue"),
 			NewCreatePawnEvent(position(3, 0), "red"),
 			NewCreatePawnEvent(position(2, 1), "blue"),
+			NewFireDeflectorEvent(),
 		},
-	}, PredictableVariantFactory{
+	}, PredictableVarianceFactory{
 		variants: map[string][]string{
 			"0red":  {BACKSLASH, SLASH, SLASH},
 			"0blue": {BACKSLASH, BACKSLASH, SLASH},
@@ -149,7 +157,7 @@ func TestGetFinalDirection(t *testing.T) {
 		t.Errorf("Failed to created game board")
 	}
 
-	_, deflections := ProcessDeflection(processedGameBoard.GameBoard)
+	deflections := processedGameBoard.LastDeflections
 	if deflections[len(deflections)-1].ToDirection != RIGHT {
 		t.Errorf("Wrong final direction %d", deflections[len(deflections)-1].ToDirection)
 	}

@@ -10,7 +10,7 @@ type ProcessedGameBoard struct {
 	GameBoard            GameBoard
 	ProcessingEventIndex int
 	LastDeflections      []Deflection
-	VariantFactory       PawnVariantFactory
+	VarianceFactory      VarianceFactory
 }
 
 type GameEvent interface {

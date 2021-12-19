@@ -54,14 +54,17 @@ func main() {
 			return err
 		}
 
-		redVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		redVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+
+		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
-			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
-			"redVariants":  redVariants,
-			"blueVariants": blueVariants,
+			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
+			"playerTurn":       parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
+			"redVariants":      redVariants,
+			"blueVariants":     blueVariants,
+			"deflectionSource": parseDirectedPosition(deflectionSource),
 		})
 	})
 
@@ -111,15 +114,17 @@ func main() {
 
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
 
-		redVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
-		blueVariants := processedGameBoard.VariantFactory.Generate(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		redVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":    parseGameBoard(processedGameBoard.GameBoard),
-			"deflections":  parseDeflections(processedGameBoard.LastDeflections),
-			"redVariants":  redVariants,
-			"blueVariants": blueVariants,
-			"playerTurn":   parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
+			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
+			"deflections":      parseDeflections(processedGameBoard.LastDeflections),
+			"redVariants":      redVariants,
+			"blueVariants":     blueVariants,
+			"playerTurn":       parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
+			"deflectionSource": parseDirectedPosition(deflectionSource),
 		})
 	})
 
