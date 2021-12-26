@@ -23,7 +23,7 @@ func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 		Position:    event.position,
 		Name:        variant[len(variant)-1],
 		TurnPlaced:  gameBoardInProcess.GameBoard.Turn,
-		Durability:  3,
+		Durability:  5,
 		PlayerOwner: event.playerOwner,
 	}
 	updatedPawns, err := addPawn(gameBoardInProcess.GameBoard.Pawns, newPawn)
@@ -31,6 +31,12 @@ func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 		return gameBoardInProcess, err
 	}
 	gameBoardInProcess.GameBoard.Pawns = updatedPawns
+
+	if event.playerOwner == "red" {
+		gameBoardInProcess.GameBoard.ScoreBoard.Red -= 1
+	} else {
+		gameBoardInProcess.GameBoard.ScoreBoard.Blue -= 1
+	}
 
 	return gameBoardInProcess, nil
 }

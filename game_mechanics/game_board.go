@@ -60,7 +60,7 @@ func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 	definition := GameBoardDefenition{
 		Id:     gameId,
 		YMax:   2,
-		XMax:   4,
+		XMax:   2,
 		Events: make([]GameEvent, 0),
 	}
 
@@ -85,7 +85,10 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		defenition: NewGameBoardDefinition(defenition.Id),
 		Pawns:      pawns,
 		Turn:       0,
-		ScoreBoard: ScoreBoard{},
+		ScoreBoard: ScoreBoard{
+			Red:  1,
+			Blue: 2,
+		},
 	}
 	gameBoardInProcess := ProcessedGameBoard{
 		GameBoard:            gameBoard,
@@ -112,6 +115,30 @@ func ProcessEvents(gameBoardInProcess ProcessedGameBoard, events []GameEvent) (P
 
 func (gameBoard GameBoard) GetDefenition() GameBoardDefenition {
 	return gameBoard.defenition
+}
+
+func (gameBoard GameBoard) IsFull() bool {
+	return gameBoard.getPawnCount() >= gameBoard.getArea()
+}
+
+func (gameBoard GameBoard) IsDense() bool {
+	return gameBoard.getPawnCount() >= (gameBoard.getArea() - gameBoard.defenition.YMax)
+}
+
+func (gameBoard GameBoard) getArea() int {
+	return (gameBoard.defenition.XMax + 1) * (gameBoard.defenition.YMax + 1)
+}
+
+func (gameBoard GameBoard) getPawnCount() int {
+	count := 0
+	for i := 0; i <= gameBoard.defenition.YMax; i++ {
+		for j := 0; j <= gameBoard.defenition.XMax; j++ {
+			if gameBoard.Pawns[i][j] != nil {
+				count += 1
+			}
+		}
+	}
+	return count
 }
 
 func (gameBoard GameBoard) getPawn(position Position) (*Pawn, error) {

@@ -4,6 +4,7 @@ const (
 	CREATE_PAWN    = "create_pawn"
 	FIRE_DEFLECTOR = "fire_deflector"
 	SKIP_PAWN      = "skip_pawn"
+	END_TURN       = "end_turn"
 )
 
 type ProcessedGameBoard struct {

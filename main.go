@@ -72,7 +72,7 @@ func main() {
 		return c.SendString("success")
 	})
 
-	app.Post("/turn", func(c *fiber.Ctx) error {
+	app.Post("/pawn", func(c *fiber.Ctx) error {
 		payload := struct {
 			GameId     int    `json:"gameId"`
 			X          int    `json:"x"`
@@ -96,7 +96,6 @@ func main() {
 		}
 
 		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
-		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var newEvents []gamemechanics.GameEvent
 
 		if payload.SkipPawn {
@@ -104,7 +103,6 @@ func main() {
 		}
 
 		newEvents = append(newEvents, pawnEvent)
-		newEvents = append(newEvents, fireEvent)
 
 		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
 
@@ -120,11 +118,77 @@ func main() {
 
 		return c.JSON(fiber.Map{
 			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
-			"deflections":      parseDeflections(processedGameBoard.LastDeflections),
+			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
 			"redVariants":      redVariants,
 			"blueVariants":     blueVariants,
 			"playerTurn":       parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
 			"deflectionSource": parseDirectedPosition(deflectionSource),
+		})
+	})
+
+	app.Post("/turn", func(c *fiber.Ctx) error {
+		payload := struct {
+			GameId     int    `json:"gameId"`
+			PlayerSide string `json:"playerSide"`
+		}{}
+		if err := c.BodyParser(&payload); err != nil {
+			return err
+		}
+
+		defenition, ok := gameStorage.Get(payload.GameId)
+		if !ok {
+			return c.SendStatus(400)
+		}
+
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+
+		if err != nil {
+			return err
+		}
+
+		allDeflections := make([][]gamemechanics.Deflection, 0)
+
+		hasFired := false
+		fullOnTurnStart := processedGameBoard.GameBoard.IsFull()
+
+		isDense := true
+		for !hasFired || (fullOnTurnStart && isDense) {
+			hasFired = true
+			fireEvent := gamemechanics.NewFireDeflectorEvent()
+			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
+			if err != nil {
+				return c.SendStatus(400)
+			}
+			allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
+			isDense = processedGameBoard.GameBoard.IsDense()
+		}
+
+		endTurnEvent := gamemechanics.NewEndTurnEvent(payload.PlayerSide)
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{endTurnEvent})
+
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
+
+		redVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("red"), processedGameBoard.GameBoard.GetTurnsPlayed("red")+2)
+		blueVariants := processedGameBoard.VarianceFactory.GeneratePawnVariant(processedGameBoard.GameBoard.GetPlayerDigest("blue"), processedGameBoard.GameBoard.GetTurnsPlayed("blue")+2)
+		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
+
+		allDeflectionsParsed := make([][]Deflection, 0)
+		for i := 0; i < len(allDeflections); i++ {
+			allDeflectionsParsed = append(allDeflectionsParsed, parseDeflections(allDeflections[i]))
+		}
+
+		return c.JSON(fiber.Map{
+			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
+			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
+			"redVariants":      redVariants,
+			"blueVariants":     blueVariants,
+			"playerTurn":       parsePlayerTurn(gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard.Turn)),
+			"deflectionSource": parseDirectedPosition(deflectionSource),
+			"allDeflections":   allDeflectionsParsed,
 		})
 	})
 
@@ -168,8 +232,8 @@ func main() {
 		}
 
 		return c.JSON(fiber.Map{
-			"gameBoard":   parseGameBoard(processedGameBoard.GameBoard),
-			"deflections": parseDeflections(processedGameBoard.LastDeflections),
+			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
+			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
 		})
 	})
 
