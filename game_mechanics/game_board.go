@@ -13,8 +13,8 @@ const (
 )
 
 const (
-	RED_SIDE  = LEFT
-	BLUE_SIDE = RIGHT
+	PLAYER_ONE_SIDE = LEFT
+	PLAYER_TWO_SIDE = RIGHT
 )
 
 const (
@@ -22,17 +22,19 @@ const (
 )
 
 type GameBoardDefenition struct {
-	Id     int
-	YMax   int
-	XMax   int
-	Events []GameEvent
+	PlayerIds   []string
+	Id          int
+	YMax        int
+	XMax        int
+	Events      []GameEvent
+	TargetScore int
 }
 
 type GameBoard struct {
 	Turn       int
 	defenition GameBoardDefenition
 	Pawns      [][]*Pawn
-	ScoreBoard ScoreBoard
+	ScoreBoard map[string]int
 }
 
 type Deflection struct {
@@ -46,11 +48,6 @@ type DeflectionEvent struct {
 	Position Position
 }
 
-type ScoreBoard struct {
-	Red  int
-	Blue int
-}
-
 type DirectedPosition struct {
 	Position  Position
 	Direction int
@@ -58,10 +55,12 @@ type DirectedPosition struct {
 
 func NewGameBoardDefinition(gameId int) GameBoardDefenition {
 	definition := GameBoardDefenition{
-		Id:     gameId,
-		YMax:   2,
-		XMax:   2,
-		Events: make([]GameEvent, 0),
+		PlayerIds:   []string{"red", "blue"},
+		Id:          gameId,
+		YMax:        2,
+		XMax:        2,
+		Events:      make([]GameEvent, 0),
+		TargetScore: 7,
 	}
 
 	return definition
@@ -81,16 +80,24 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		pawns[i] = make([]*Pawn, width)
 	}
 
+	scoreBoard := make(map[string]int)
+	for index, playerId := range defenition.PlayerIds {
+		scoreBoard[playerId] = index + 1
+	}
 	gameBoard := GameBoard{
 		defenition: NewGameBoardDefinition(defenition.Id),
 		Pawns:      pawns,
 		Turn:       0,
-		ScoreBoard: ScoreBoard{
-			Red:  1,
-			Blue: 2,
-		},
+		ScoreBoard: scoreBoard,
 	}
+
+	playersInMatchPoint := make(map[string]bool)
+	for _, playerId := range gameBoard.defenition.PlayerIds {
+		playersInMatchPoint[playerId] = false
+	}
+
 	gameBoardInProcess := ProcessedGameBoard{
+		PlayersInMatchPoint:  playersInMatchPoint,
 		GameBoard:            gameBoard,
 		ProcessingEventIndex: 0,
 		VarianceFactory:      varianceFactory,
@@ -265,21 +272,17 @@ func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard
 	}
 
 	lastDirection := deflections[len(deflections)-1].ToDirection
-	if lastDirection == BLUE_SIDE {
-		gameBoard.ScoreBoard.Blue += 1
-	} else if lastDirection == RED_SIDE {
-		gameBoard.ScoreBoard.Red += 1
+	if lastDirection == PLAYER_ONE_SIDE {
+		gameBoard.ScoreBoard[gameBoard.defenition.PlayerIds[0]] += 1
+	} else if lastDirection == PLAYER_TWO_SIDE {
+		gameBoard.ScoreBoard[gameBoard.defenition.PlayerIds[1]] += 1
 	}
 
 	return gameBoard, deflections
 }
 
-func GetPlayerTurn(turn int) int {
-	if turn%2 == 0 {
-		return RED_SIDE
-	} else {
-		return BLUE_SIDE
-	}
+func GetPlayerTurn(gameBoard GameBoard) string {
+	return gameBoard.defenition.PlayerIds[gameBoard.Turn%len(gameBoard.defenition.PlayerIds)]
 }
 
 func (gameBoard GameBoard) GetTurnsPlayed(variant string) int {
@@ -298,4 +301,22 @@ func getTurnsPlayed(events []GameEvent, variant string) int {
 
 func (gameBoard GameBoard) GetPlayerDigest(playerId string) string {
 	return strconv.Itoa(gameBoard.defenition.Id) + playerId
+}
+
+func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {
+	matchPointEvents := make([]GameEvent, 0)
+	for _, playerId := range gameBoardInPrccess.GameBoard.defenition.PlayerIds {
+		if gameBoardInPrccess.GameBoard.ScoreBoard[playerId] > gameBoardInPrccess.GameBoard.defenition.TargetScore && !gameBoardInPrccess.PlayersInMatchPoint[playerId] {
+			matchPointEvents = append(matchPointEvents, NewMatchPointEvent(playerId))
+		}
+	}
+	return matchPointEvents
+}
+
+func GetPawnVariants(gameBoardInPrccess ProcessedGameBoard) map[string][]string {
+	variants := make(map[string][]string)
+	for _, playerId := range gameBoardInPrccess.GameBoard.defenition.PlayerIds {
+		variants[playerId] = gameBoardInPrccess.VarianceFactory.GeneratePawnVariant(gameBoardInPrccess.GameBoard.GetPlayerDigest(playerId), gameBoardInPrccess.GameBoard.GetTurnsPlayed("blue")+2)
+	}
+	return variants
 }

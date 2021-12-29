@@ -32,11 +32,7 @@ func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 	}
 	gameBoardInProcess.GameBoard.Pawns = updatedPawns
 
-	if event.playerOwner == "red" {
-		gameBoardInProcess.GameBoard.ScoreBoard.Red -= 1
-	} else {
-		gameBoardInProcess.GameBoard.ScoreBoard.Blue -= 1
-	}
+	gameBoardInProcess.GameBoard.ScoreBoard[event.playerOwner] -= 1
 
 	return gameBoardInProcess, nil
 }

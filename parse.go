@@ -22,14 +22,14 @@ type Pawn struct {
 }
 
 type GameBoard struct {
-	Id         int        `json:"id"`
-	XMin       int        `json:"xMin"`
-	XMax       int        `json:"xMax"`
-	YMin       int        `json:"yMin"`
-	YMax       int        `json:"yMax"`
-	Pawns      [][]Pawn   `json:"pawns"`
-	Turn       int        `json:"turn"`
-	ScoreBoard ScoreBoard `json:"scoreBoard"`
+	Id         int            `json:"id"`
+	XMin       int            `json:"xMin"`
+	XMax       int            `json:"xMax"`
+	YMin       int            `json:"yMin"`
+	YMax       int            `json:"yMax"`
+	Pawns      [][]Pawn       `json:"pawns"`
+	Turn       int            `json:"turn"`
+	ScoreBoard map[string]int `json:"scoreBoard"`
 }
 
 type Deflection struct {
@@ -41,11 +41,6 @@ type Deflection struct {
 type DeflectionEvent struct {
 	Name     string   `json:"name"`
 	Position Position `json:"position"`
-}
-
-type ScoreBoard struct {
-	Red  int `json:"red"`
-	Blue int `json:"blue"`
 }
 
 func parseDeflections(deflections []gamemechanics.Deflection) []Deflection {
@@ -96,7 +91,7 @@ func parseGameBoard(gameBoard gamemechanics.GameBoard) GameBoard {
 		YMin:       0,
 		Turn:       gameBoard.Turn,
 		Pawns:      pawns,
-		ScoreBoard: parseScoreBoard(gameBoard.ScoreBoard),
+		ScoreBoard: gameBoard.ScoreBoard,
 	}
 }
 
@@ -111,18 +106,6 @@ func parsePawn(pawn gamemechanics.Pawn) Pawn {
 
 func parsePosition(position gamemechanics.Position) Position {
 	return Position{X: position.X, Y: position.Y}
-}
-
-func parseScoreBoard(scoreBoard gamemechanics.ScoreBoard) ScoreBoard {
-	return ScoreBoard{Red: scoreBoard.Red, Blue: scoreBoard.Blue}
-}
-
-func parsePlayerTurn(player int) string {
-	if player == gamemechanics.RED_SIDE {
-		return "red"
-	} else {
-		return "blue"
-	}
 }
 
 func parseDirectedPosition(directed gamemechanics.DirectedPosition) DirectoedPosition {

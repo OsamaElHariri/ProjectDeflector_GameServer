@@ -15,12 +15,7 @@ func NewEndTurnEvent(playerOwner string) EndTurnEvent {
 func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
 	gameBoardInProcess.GameBoard.Turn += 1
 
-	if event.playerOwner == "red" {
-		gameBoardInProcess.GameBoard.ScoreBoard.Red += 1
-	} else {
-		gameBoardInProcess.GameBoard.ScoreBoard.Blue += 1
-	}
-
+	gameBoardInProcess.GameBoard.ScoreBoard[event.playerOwner] += 1
 	return gameBoardInProcess, nil
 }
 
