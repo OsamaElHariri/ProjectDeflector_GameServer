@@ -6,6 +6,7 @@ const (
 	SKIP_PAWN      = "skip_pawn"
 	END_TURN       = "end_turn"
 	MATCH_POINT    = "match_point"
+	GAME_WIN       = "game_win"
 )
 
 type ProcessedGameBoard struct {
@@ -14,6 +15,8 @@ type ProcessedGameBoard struct {
 	ProcessingEventIndex int
 	LastDeflections      []Deflection
 	VarianceFactory      VarianceFactory
+	GameInProgress       bool
+	Winner               string
 }
 
 type GameEvent interface {

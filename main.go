@@ -152,12 +152,37 @@ func main() {
 			if err != nil {
 				return c.SendStatus(400)
 			}
+
+			if len(processedGameBoard.LastDeflections) > 1 {
+				lastDirection := processedGameBoard.LastDeflections[len(processedGameBoard.LastDeflections)-1].ToDirection
+				playerId, ok := gamemechanics.GetPlayerFromDirection(processedGameBoard.GameBoard.GetDefenition(), lastDirection)
+
+				if ok && processedGameBoard.PlayersInMatchPoint[playerId] {
+					winEvent := gamemechanics.NewWinEvent(playerId)
+					processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{winEvent})
+
+					if err != nil {
+						return c.SendStatus(400)
+					}
+					break
+				}
+			}
+
 			allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
 			isDense = processedGameBoard.GameBoard.IsDense()
 		}
 
 		endTurnEvent := gamemechanics.NewEndTurnEvent(payload.PlayerSide)
 		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{endTurnEvent})
+
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		if processedGameBoard.GameInProgress {
+			matchPointEvents := gamemechanics.GetMatchPointEvents(processedGameBoard)
+			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, matchPointEvents)
+		}
 
 		if err != nil {
 			return c.SendStatus(400)
@@ -179,6 +204,7 @@ func main() {
 			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"deflectionSource": parseDirectedPosition(deflectionSource),
 			"allDeflections":   allDeflectionsParsed,
+			"winner":           processedGameBoard.Winner,
 		})
 	})
 

@@ -101,6 +101,7 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		GameBoard:            gameBoard,
 		ProcessingEventIndex: 0,
 		VarianceFactory:      varianceFactory,
+		GameInProgress:       true,
 	}
 	return ProcessEvents(gameBoardInProcess, defenition.Events)
 }
@@ -272,13 +273,21 @@ func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard
 	}
 
 	lastDirection := deflections[len(deflections)-1].ToDirection
-	if lastDirection == PLAYER_ONE_SIDE {
-		gameBoard.ScoreBoard[gameBoard.defenition.PlayerIds[0]] += 1
-	} else if lastDirection == PLAYER_TWO_SIDE {
-		gameBoard.ScoreBoard[gameBoard.defenition.PlayerIds[1]] += 1
+	playerId, ok := GetPlayerFromDirection(gameBoard.defenition, lastDirection)
+	if ok {
+		gameBoard.ScoreBoard[playerId] += 1
 	}
 
 	return gameBoard, deflections
+}
+
+func GetPlayerFromDirection(defenition GameBoardDefenition, direction int) (string, bool) {
+	if direction == LEFT {
+		return defenition.PlayerIds[0], true
+	} else if direction == RIGHT {
+		return defenition.PlayerIds[1], true
+	}
+	return "", false
 }
 
 func GetPlayerTurn(gameBoard GameBoard) string {
@@ -306,7 +315,7 @@ func (gameBoard GameBoard) GetPlayerDigest(playerId string) string {
 func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {
 	matchPointEvents := make([]GameEvent, 0)
 	for _, playerId := range gameBoardInPrccess.GameBoard.defenition.PlayerIds {
-		if gameBoardInPrccess.GameBoard.ScoreBoard[playerId] > gameBoardInPrccess.GameBoard.defenition.TargetScore && !gameBoardInPrccess.PlayersInMatchPoint[playerId] {
+		if gameBoardInPrccess.GameBoard.ScoreBoard[playerId] >= gameBoardInPrccess.GameBoard.defenition.TargetScore && !gameBoardInPrccess.PlayersInMatchPoint[playerId] {
 			matchPointEvents = append(matchPointEvents, NewMatchPointEvent(playerId))
 		}
 	}
