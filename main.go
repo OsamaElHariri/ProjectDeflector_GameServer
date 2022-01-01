@@ -57,10 +57,13 @@ func main() {
 		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
 
 		return c.JSON(fiber.Map{
-			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
-			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"variants":         gamemechanics.GetPawnVariants(processedGameBoard),
-			"deflectionSource": parseDirectedPosition(deflectionSource),
+			"playerIds":         defenition.PlayerIds,
+			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
+			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
+			"variants":          gamemechanics.GetPawnVariants(processedGameBoard),
+			"deflectionSource":  parseDirectedPosition(deflectionSource),
+			"targetScore":       defenition.TargetScore,
+			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
 		})
 	})
 
@@ -198,13 +201,14 @@ func main() {
 		}
 
 		return c.JSON(fiber.Map{
-			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
-			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
-			"variants":         gamemechanics.GetPawnVariants(processedGameBoard),
-			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"deflectionSource": parseDirectedPosition(deflectionSource),
-			"allDeflections":   allDeflectionsParsed,
-			"winner":           processedGameBoard.Winner,
+			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
+			"finalDeflections":  parseDeflections(processedGameBoard.LastDeflections),
+			"variants":          gamemechanics.GetPawnVariants(processedGameBoard),
+			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
+			"deflectionSource":  parseDirectedPosition(deflectionSource),
+			"allDeflections":    allDeflectionsParsed,
+			"winner":            processedGameBoard.Winner,
+			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
 		})
 	})
 

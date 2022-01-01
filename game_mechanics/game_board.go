@@ -325,7 +325,7 @@ func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {
 func GetPawnVariants(gameBoardInPrccess ProcessedGameBoard) map[string][]string {
 	variants := make(map[string][]string)
 	for _, playerId := range gameBoardInPrccess.GameBoard.defenition.PlayerIds {
-		variants[playerId] = gameBoardInPrccess.VarianceFactory.GeneratePawnVariant(gameBoardInPrccess.GameBoard.GetPlayerDigest(playerId), gameBoardInPrccess.GameBoard.GetTurnsPlayed("blue")+2)
+		variants[playerId] = gameBoardInPrccess.VarianceFactory.GeneratePawnVariant(gameBoardInPrccess.GameBoard.GetPlayerDigest(playerId), gameBoardInPrccess.GameBoard.GetTurnsPlayed(playerId)+2)
 	}
 	return variants
 }
