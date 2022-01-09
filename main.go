@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
+	broadcast "projectdeflector/game/broadcast"
 	gamemechanics "projectdeflector/game/game_mechanics"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,26 +12,6 @@ func main() {
 	app := fiber.New()
 
 	gameStorage := gamemechanics.NewStorage()
-
-	app.Get("/game/:gameId", func(c *fiber.Ctx) error {
-		gameId, err := strconv.Atoi(c.Params("gameId"))
-		if err != nil {
-			return err
-		}
-
-		defenition, ok := gameStorage.Get(gameId)
-		if !ok {
-			return c.SendStatus(400)
-		}
-
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(parseGameBoard(processedGameBoard.GameBoard))
-	})
 
 	app.Post("/game", func(c *fiber.Ctx) error {
 		payload := struct {
@@ -55,8 +35,7 @@ func main() {
 		}
 
 		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
-
-		return c.JSON(fiber.Map{
+		result := fiber.Map{
 			"playerIds":         defenition.PlayerIds,
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
@@ -64,7 +43,8 @@ func main() {
 			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"targetScore":       defenition.TargetScore,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
-		})
+		}
+		return c.JSON(result)
 	})
 
 	app.Delete("/game", func(c *fiber.Ctx) error {
@@ -113,13 +93,16 @@ func main() {
 
 		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
 
-		return c.JSON(fiber.Map{
+		result := fiber.Map{
 			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
 			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
 			"variants":         gamemechanics.GetPawnVariants(processedGameBoard),
 			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"deflectionSource": parseDirectedPosition(deflectionSource),
-		})
+		}
+		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "pawn", result)
+
+		return c.JSON(result)
 	})
 
 	app.Post("/turn", func(c *fiber.Ctx) error {
@@ -200,7 +183,7 @@ func main() {
 			allDeflectionsParsed = append(allDeflectionsParsed, parseDeflections(allDeflections[i]))
 		}
 
-		return c.JSON(fiber.Map{
+		result := fiber.Map{
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"finalDeflections":  parseDeflections(processedGameBoard.LastDeflections),
 			"variants":          gamemechanics.GetPawnVariants(processedGameBoard),
@@ -209,7 +192,10 @@ func main() {
 			"allDeflections":    allDeflectionsParsed,
 			"winner":            processedGameBoard.Winner,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
-		})
+		}
+		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "turn", result)
+
+		return c.JSON(result)
 	})
 
 	app.Post("/peek", func(c *fiber.Ctx) error {
@@ -234,7 +220,8 @@ func main() {
 			return err
 		}
 
-		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
+		peekPosition := gamemechanics.NewPosition(payload.X, payload.Y)
+		pawnEvent := gamemechanics.NewCreatePawnEvent(peekPosition, payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var newEvents []gamemechanics.GameEvent
 
@@ -251,10 +238,14 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		return c.JSON(fiber.Map{
+		result := fiber.Map{
+			"peekPosition":     parsePosition(peekPosition),
 			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
 			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
-		})
+		}
+		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "peek", result)
+
+		return c.JSON(result)
 	})
 
 	log.Fatal(app.Listen(":3000"))
