@@ -86,8 +86,10 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		scoreBoard[playerId] = index + 1
 		pawnVariants[playerId] = varianceFactory.GeneratePawnVariant(getPlayerDigest(defenition, playerId), 2)
 	}
+	events := defenition.Events
+	defenition.Events = make([]GameEvent, 0)
 	gameBoard := GameBoard{
-		defenition: NewGameBoardDefinition(defenition.Id),
+		defenition: defenition,
 		Pawns:      pawns,
 		Turn:       0,
 		ScoreBoard: scoreBoard,
@@ -106,7 +108,7 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		GameInProgress:       true,
 		PawnVariants:         pawnVariants,
 	}
-	return ProcessEvents(gameBoardInProcess, defenition.Events)
+	return ProcessEvents(gameBoardInProcess, events)
 }
 
 func ProcessEvents(gameBoardInProcess ProcessedGameBoard, events []GameEvent) (ProcessedGameBoard, error) {

@@ -22,8 +22,9 @@ func (factory PredictableVarianceFactory) GenerateDeflectionSource(gameBoard Gam
 func TestNewGameBoard(t *testing.T) {
 
 	processedGameBoard, err := NewGameBoard(GameBoardDefenition{
-		YMax: 2,
-		XMax: 4,
+		PlayerIds: []string{"red", "blue"},
+		YMax:      2,
+		XMax:      4,
 		Events: []GameEvent{
 			NewCreatePawnEvent(position(2, 1), "red"),
 			NewCreatePawnEvent(position(3, 2), "blue"),
@@ -56,8 +57,9 @@ func TestNewGameBoard(t *testing.T) {
 
 func TestPawnTraversal(t *testing.T) {
 	processedGameBoard, err := NewGameBoard(GameBoardDefenition{
-		YMax: 2,
-		XMax: 4,
+		PlayerIds: []string{"red", "blue"},
+		YMax:      2,
+		XMax:      4,
 		Events: []GameEvent{
 			NewCreatePawnEvent(position(2, 2), "red"),
 			NewCreatePawnEvent(position(2, 1), "blue"),
@@ -135,8 +137,9 @@ func TestPawnTraversal(t *testing.T) {
 
 func TestGetFinalDirection(t *testing.T) {
 	processedGameBoard, err := newGameBoard(GameBoardDefenition{
-		YMax: 2,
-		XMax: 4,
+		PlayerIds: []string{"red", "blue"},
+		YMax:      2,
+		XMax:      4,
 		Events: []GameEvent{
 			NewCreatePawnEvent(position(2, 0), "red"),
 			NewCreatePawnEvent(position(1, 0), "blue"),
@@ -148,8 +151,8 @@ func TestGetFinalDirection(t *testing.T) {
 		},
 	}, PredictableVarianceFactory{
 		variants: map[string][]string{
-			"0red":  {BACKSLASH, SLASH, SLASH},
-			"0blue": {BACKSLASH, BACKSLASH, SLASH},
+			"0red":  {BACKSLASH, SLASH, SLASH, SLASH, SLASH},
+			"0blue": {BACKSLASH, BACKSLASH, SLASH, SLASH, SLASH},
 		},
 	})
 
