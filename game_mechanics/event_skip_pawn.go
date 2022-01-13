@@ -13,9 +13,8 @@ func NewSkipPawnEvent(playerOwner string) SkipPawnEvent {
 }
 
 func (event SkipPawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
-	return gameBoardInProcess, nil
-}
+	variants := gameBoardInProcess.PawnVariants[event.playerOwner]
 
-func (event SkipPawnEvent) DoesConsumeVariant(playerId string) bool {
-	return event.playerOwner == playerId
+	gameBoardInProcess.PawnVariants[event.playerOwner] = gameBoardInProcess.VarianceFactory.GeneratePawnVariant(getPlayerDigest(gameBoardInProcess.GameBoard.defenition, event.playerOwner), len(variants)+2)
+	return gameBoardInProcess, nil
 }

@@ -81,8 +81,10 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 	}
 
 	scoreBoard := make(map[string]int)
+	pawnVariants := make(map[string][]string)
 	for index, playerId := range defenition.PlayerIds {
 		scoreBoard[playerId] = index + 1
+		pawnVariants[playerId] = varianceFactory.GeneratePawnVariant(getPlayerDigest(defenition, playerId), 2)
 	}
 	gameBoard := GameBoard{
 		defenition: NewGameBoardDefinition(defenition.Id),
@@ -102,6 +104,7 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		ProcessingEventIndex: 0,
 		VarianceFactory:      varianceFactory,
 		GameInProgress:       true,
+		PawnVariants:         pawnVariants,
 	}
 	return ProcessEvents(gameBoardInProcess, defenition.Events)
 }
@@ -294,22 +297,8 @@ func GetPlayerTurn(gameBoard GameBoard) string {
 	return gameBoard.defenition.PlayerIds[gameBoard.Turn%len(gameBoard.defenition.PlayerIds)]
 }
 
-func (gameBoard GameBoard) GetTurnsPlayed(variant string) int {
-	return getTurnsPlayed(gameBoard.defenition.Events, variant)
-}
-
-func getTurnsPlayed(events []GameEvent, variant string) int {
-	count := 0
-	for i := 0; i < len(events); i++ {
-		if events[i].DoesConsumeVariant(variant) {
-			count += 1
-		}
-	}
-	return count
-}
-
-func (gameBoard GameBoard) GetPlayerDigest(playerId string) string {
-	return strconv.Itoa(gameBoard.defenition.Id) + playerId
+func getPlayerDigest(defenition GameBoardDefenition, playerId string) string {
+	return strconv.Itoa(defenition.Id) + playerId
 }
 
 func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {
@@ -320,12 +309,4 @@ func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {
 		}
 	}
 	return matchPointEvents
-}
-
-func GetPawnVariants(gameBoardInPrccess ProcessedGameBoard) map[string][]string {
-	variants := make(map[string][]string)
-	for _, playerId := range gameBoardInPrccess.GameBoard.defenition.PlayerIds {
-		variants[playerId] = gameBoardInPrccess.VarianceFactory.GeneratePawnVariant(gameBoardInPrccess.GameBoard.GetPlayerDigest(playerId), gameBoardInPrccess.GameBoard.GetTurnsPlayed(playerId)+2)
-	}
-	return variants
 }

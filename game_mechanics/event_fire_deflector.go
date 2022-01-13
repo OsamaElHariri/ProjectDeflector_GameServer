@@ -18,7 +18,3 @@ func (event FireDeflectorEvent) UpdateGameBoard(gameBoardInProcess ProcessedGame
 
 	return gameBoardInProcess, nil
 }
-
-func (event FireDeflectorEvent) DoesConsumeVariant(playerId string) bool {
-	return false
-}

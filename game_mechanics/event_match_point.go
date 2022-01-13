@@ -17,7 +17,3 @@ func (event MatchPointEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 
 	return gameBoardInProcess, nil
 }
-
-func (event MatchPointEvent) DoesConsumeVariant(playerId string) bool {
-	return false
-}

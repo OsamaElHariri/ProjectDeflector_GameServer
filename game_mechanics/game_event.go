@@ -17,9 +17,9 @@ type ProcessedGameBoard struct {
 	VarianceFactory      VarianceFactory
 	GameInProgress       bool
 	Winner               string
+	PawnVariants         map[string][]string
 }
 
 type GameEvent interface {
 	UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error)
-	DoesConsumeVariant(playerId string) bool
 }

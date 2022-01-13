@@ -18,7 +18,3 @@ func (event WinEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (Pr
 
 	return gameBoardInProcess, nil
 }
-
-func (event WinEvent) DoesConsumeVariant(playerId string) bool {
-	return false
-}

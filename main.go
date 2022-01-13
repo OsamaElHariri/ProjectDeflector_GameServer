@@ -39,7 +39,7 @@ func main() {
 			"playerIds":         defenition.PlayerIds,
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"variants":          gamemechanics.GetPawnVariants(processedGameBoard),
+			"variants":          processedGameBoard.PawnVariants,
 			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"targetScore":       defenition.TargetScore,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
@@ -96,7 +96,7 @@ func main() {
 		result := fiber.Map{
 			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
 			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
-			"variants":         gamemechanics.GetPawnVariants(processedGameBoard),
+			"variants":         processedGameBoard.PawnVariants,
 			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"deflectionSource": parseDirectedPosition(deflectionSource),
 		}
@@ -186,7 +186,7 @@ func main() {
 		result := fiber.Map{
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"finalDeflections":  parseDeflections(processedGameBoard.LastDeflections),
-			"variants":          gamemechanics.GetPawnVariants(processedGameBoard),
+			"variants":          processedGameBoard.PawnVariants,
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"allDeflections":    allDeflectionsParsed,

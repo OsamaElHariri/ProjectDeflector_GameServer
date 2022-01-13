@@ -18,7 +18,3 @@ func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard)
 	gameBoardInProcess.GameBoard.ScoreBoard[event.playerOwner] += 1
 	return gameBoardInProcess, nil
 }
-
-func (event EndTurnEvent) DoesConsumeVariant(playerId string) bool {
-	return false
-}
