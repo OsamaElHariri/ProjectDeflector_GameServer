@@ -89,16 +89,17 @@ func main() {
 			return c.SendStatus(400)
 		}
 
+		newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
 
-		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
-
 		result := fiber.Map{
-			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
-			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
-			"variants":         processedGameBoard.PawnVariants,
-			"playerTurn":       gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"deflectionSource": parseDirectedPosition(deflectionSource),
+			"scoreBoard": processedGameBoard.GameBoard.ScoreBoard,
+			"variants":   processedGameBoard.PawnVariants,
+			"newPawn":    parsePawn(*newPawn),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "pawn", result)
 
@@ -184,8 +185,7 @@ func main() {
 		}
 
 		result := fiber.Map{
-			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
-			"finalDeflections":  parseDeflections(processedGameBoard.LastDeflections),
+			"scoreBoard":        processedGameBoard.GameBoard.ScoreBoard,
 			"variants":          processedGameBoard.PawnVariants,
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"deflectionSource":  parseDirectedPosition(deflectionSource),
@@ -238,10 +238,14 @@ func main() {
 			return c.SendStatus(400)
 		}
 
+		newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
 		result := fiber.Map{
-			"peekPosition":     parsePosition(peekPosition),
-			"gameBoard":        parseGameBoard(processedGameBoard.GameBoard),
-			"finalDeflections": parseDeflections(processedGameBoard.LastDeflections),
+			"newPawn":     parsePawn(*newPawn),
+			"deflections": parseDeflections(processedGameBoard.LastDeflections),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "peek", result)
 

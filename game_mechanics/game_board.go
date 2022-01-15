@@ -154,7 +154,7 @@ func (gameBoard GameBoard) getPawnCount() int {
 	return count
 }
 
-func (gameBoard GameBoard) getPawn(position Position) (*Pawn, error) {
+func (gameBoard GameBoard) GetPawn(position Position) (*Pawn, error) {
 	if !isWithinBoard(gameBoard.Pawns, position) {
 		return nil, errors.New("invalid pawn position")
 	}
@@ -193,7 +193,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 	if currentDirection == UP {
 		for i := currentPosition.Y + 1; i <= gameBoard.defenition.YMax; i++ {
-			pawn, err := gameBoard.getPawn(position(currentPosition.X, i))
+			pawn, err := gameBoard.GetPawn(position(currentPosition.X, i))
 			if pawn != nil && err == nil {
 				return pawn, nil
 			}
@@ -203,7 +203,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 	if currentDirection == DOWN {
 		for i := currentPosition.Y - 1; i >= 0; i-- {
-			pawn, err := gameBoard.getPawn(position(currentPosition.X, i))
+			pawn, err := gameBoard.GetPawn(position(currentPosition.X, i))
 			if pawn != nil && err == nil {
 				return pawn, nil
 			}
@@ -213,7 +213,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 	if currentDirection == RIGHT {
 		for i := currentPosition.X + 1; i <= gameBoard.defenition.XMax; i++ {
-			pawn, err := gameBoard.getPawn(position(i, currentPosition.Y))
+			pawn, err := gameBoard.GetPawn(position(i, currentPosition.Y))
 			if pawn != nil && err == nil {
 				return pawn, nil
 			}
@@ -223,7 +223,7 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 
 	if currentDirection == LEFT {
 		for i := currentPosition.X - 1; i >= 0; i-- {
-			pawn, err := gameBoard.getPawn(position(i, currentPosition.Y))
+			pawn, err := gameBoard.GetPawn(position(i, currentPosition.Y))
 			if pawn != nil && err == nil {
 				return pawn, nil
 			}

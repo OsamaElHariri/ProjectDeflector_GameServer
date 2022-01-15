@@ -6,12 +6,11 @@ const (
 )
 
 type Pawn struct {
-	Position      Position
-	Name          string
-	TurnPlaced    int
-	TurnDestroyed int
-	Durability    int
-	PlayerOwner   string
+	Position    Position
+	Name        string
+	TurnPlaced  int
+	Durability  int
+	PlayerOwner string
 }
 
 func (pawn Pawn) getDeflectedDirection(currentDirection int) int {

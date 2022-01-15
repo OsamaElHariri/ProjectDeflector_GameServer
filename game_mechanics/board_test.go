@@ -34,22 +34,22 @@ func TestNewGameBoard(t *testing.T) {
 		t.Errorf("Failed to create board")
 	}
 	gameBoard := processedGameBoard.GameBoard
-	pawn, err := gameBoard.getPawn(position(2, 1))
+	pawn, err := gameBoard.GetPawn(position(2, 1))
 	if err != nil || pawn.Position.X != 2 || pawn.Position.Y != 1 {
 		t.Errorf("Failed to get pawn")
 	}
 
-	pawn, err = gameBoard.getPawn(position(3, 2))
+	pawn, err = gameBoard.GetPawn(position(3, 2))
 	if err != nil || pawn.Position.X != 3 || pawn.Position.Y != 2 {
 		t.Errorf("Failed to get pawn")
 	}
 
-	pawn, err = gameBoard.getPawn(position(0, 1))
+	pawn, err = gameBoard.GetPawn(position(0, 1))
 	if pawn != nil || err == nil {
 		t.Errorf("Got pawn when there is no pawn")
 	}
 
-	pawn, err = gameBoard.getPawn(position(500, 500))
+	pawn, err = gameBoard.GetPawn(position(500, 500))
 	if pawn != nil || err == nil {
 		t.Errorf("Got pawn when there is no pawn")
 	}
