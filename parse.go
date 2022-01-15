@@ -22,7 +22,7 @@ type Pawn struct {
 }
 
 type GameBoard struct {
-	Id         int            `json:"id"`
+	Id         string         `json:"id"`
 	XMin       int            `json:"xMin"`
 	XMax       int            `json:"xMax"`
 	YMin       int            `json:"yMin"`

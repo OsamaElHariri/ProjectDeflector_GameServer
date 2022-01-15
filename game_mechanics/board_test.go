@@ -137,6 +137,7 @@ func TestPawnTraversal(t *testing.T) {
 
 func TestGetFinalDirection(t *testing.T) {
 	processedGameBoard, err := newGameBoard(GameBoardDefenition{
+		Id:        "-",
 		PlayerIds: []string{"red", "blue"},
 		YMax:      2,
 		XMax:      4,
@@ -151,8 +152,8 @@ func TestGetFinalDirection(t *testing.T) {
 		},
 	}, PredictableVarianceFactory{
 		variants: map[string][]string{
-			"0red":  {BACKSLASH, SLASH, SLASH, SLASH, SLASH},
-			"0blue": {BACKSLASH, BACKSLASH, SLASH, SLASH, SLASH},
+			"-red":  {BACKSLASH, SLASH, SLASH, SLASH, SLASH},
+			"-blue": {BACKSLASH, BACKSLASH, SLASH, SLASH, SLASH},
 		},
 	})
 

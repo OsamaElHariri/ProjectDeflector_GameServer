@@ -2,7 +2,6 @@ package gamemechanics
 
 import (
 	"errors"
-	"strconv"
 )
 
 const (
@@ -22,8 +21,8 @@ const (
 )
 
 type GameBoardDefenition struct {
+	Id          string
 	PlayerIds   []string
-	Id          int
 	YMax        int
 	XMax        int
 	Events      []GameEvent
@@ -53,9 +52,9 @@ type DirectedPosition struct {
 	Direction int
 }
 
-func NewGameBoardDefinition(gameId int) GameBoardDefenition {
+func NewGameBoardDefinition(gameId string, playerIds []string) GameBoardDefenition {
 	definition := GameBoardDefenition{
-		PlayerIds:   []string{"red", "blue"},
+		PlayerIds:   playerIds,
 		Id:          gameId,
 		YMax:        2,
 		XMax:        2,
@@ -300,7 +299,7 @@ func GetPlayerTurn(gameBoard GameBoard) string {
 }
 
 func getPlayerDigest(defenition GameBoardDefenition, playerId string) string {
-	return strconv.Itoa(defenition.Id) + playerId
+	return defenition.Id + playerId
 }
 
 func GetMatchPointEvents(gameBoardInPrccess ProcessedGameBoard) []GameEvent {

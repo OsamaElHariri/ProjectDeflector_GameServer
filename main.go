@@ -2,8 +2,10 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	broadcast "projectdeflector/game/broadcast"
 	gamemechanics "projectdeflector/game/game_mechanics"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,19 +15,12 @@ func main() {
 
 	gameStorage := gamemechanics.NewStorage()
 
-	app.Post("/game", func(c *fiber.Ctx) error {
-		payload := struct {
-			GameId int `json:"gameId"`
-		}{}
+	app.Get("/game/:id", func(c *fiber.Ctx) error {
 
-		if err := c.BodyParser(&payload); err != nil {
-			return c.SendStatus(400)
-		}
-
-		defenition, ok := gameStorage.Get(payload.GameId)
+		gameId := c.Params("id")
+		defenition, ok := gameStorage.Get(gameId)
 		if !ok {
-			defenition = gamemechanics.NewGameBoardDefinition(payload.GameId)
-			gameStorage.Set(payload.GameId, defenition)
+			return c.SendStatus(400)
 		}
 
 		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
@@ -35,7 +30,13 @@ func main() {
 		}
 
 		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
+
+		colors := map[string]string{}
+		colors[processedGameBoard.GameBoard.GetDefenition().PlayerIds[0]] = "#FD1717"
+		colors[processedGameBoard.GameBoard.GetDefenition().PlayerIds[1]] = "#173CFD"
+
 		result := fiber.Map{
+			"gameId":            defenition.Id,
 			"playerIds":         defenition.PlayerIds,
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
@@ -43,6 +44,30 @@ func main() {
 			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"targetScore":       defenition.TargetScore,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
+			"colors":            colors,
+		}
+		return c.JSON(result)
+	})
+
+	app.Post("/game", func(c *fiber.Ctx) error {
+		payload := struct {
+			PlayerIds []string `json:"playerIds"`
+		}{}
+
+		if err := c.BodyParser(&payload); err != nil {
+			return c.SendStatus(400)
+		}
+
+		if len(payload.PlayerIds) != 2 {
+			return c.SendStatus(400)
+		}
+		gameId := strconv.Itoa(rand.Int())
+
+		defenition := gamemechanics.NewGameBoardDefinition(gameId, payload.PlayerIds)
+		gameStorage.Set(gameId, defenition)
+
+		result := fiber.Map{
+			"gameId": gameId,
 		}
 		return c.JSON(result)
 	})
@@ -53,7 +78,7 @@ func main() {
 
 	app.Post("/pawn", func(c *fiber.Ctx) error {
 		payload := struct {
-			GameId     int    `json:"gameId"`
+			GameId     string `json:"gameId"`
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
@@ -108,7 +133,7 @@ func main() {
 
 	app.Post("/turn", func(c *fiber.Ctx) error {
 		payload := struct {
-			GameId     int    `json:"gameId"`
+			GameId     string `json:"gameId"`
 			PlayerSide string `json:"playerSide"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
@@ -200,7 +225,7 @@ func main() {
 
 	app.Post("/peek", func(c *fiber.Ctx) error {
 		payload := struct {
-			GameId     int    `json:"gameId"`
+			GameId     string `json:"gameId"`
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`

@@ -1,26 +1,26 @@
 package gamemechanics
 
 type GameStorage struct {
-	games map[int]GameBoardDefenition
+	games map[string]GameBoardDefenition
 }
 
 func NewStorage() GameStorage {
 	return GameStorage{
-		games: make(map[int]GameBoardDefenition),
+		games: make(map[string]GameBoardDefenition),
 	}
 }
 
-func (storage *GameStorage) Set(id int, defenition GameBoardDefenition) bool {
+func (storage *GameStorage) Set(id string, defenition GameBoardDefenition) bool {
 	storage.games[id] = defenition
 	return true
 }
 
-func (storage *GameStorage) Get(id int) (GameBoardDefenition, bool) {
+func (storage *GameStorage) Get(id string) (GameBoardDefenition, bool) {
 	board, ok := storage.games[id]
 	return board, ok
 }
 
-func (storage *GameStorage) Delete(id int) bool {
+func (storage *GameStorage) Delete(id string) bool {
 	delete(storage.games, id)
 	return true
 }
