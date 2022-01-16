@@ -35,7 +35,7 @@ func (factory RandomVarianceFactory) GeneratePawnVariant(str string, turns int) 
 
 func (factory RandomVarianceFactory) GenerateDeflectionSource(gameBoard GameBoard, turn int) DirectedPosition {
 	hashGen := md5.New()
-	hash := hashGen.Sum([]byte(gameBoard.defenition.Id + strconv.Itoa(turn)))
+	hash := hashGen.Sum([]byte(strconv.Itoa(turn) + gameBoard.defenition.Id))
 	var seed uint64 = binary.BigEndian.Uint64(hash)
 
 	rand.Seed(int64(seed))
