@@ -82,7 +82,6 @@ func main() {
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
-			SkipPawn   bool   `json:"skipPawn"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -101,10 +100,6 @@ func main() {
 
 		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
 		var newEvents []gamemechanics.GameEvent
-
-		if payload.SkipPawn {
-			newEvents = append(newEvents, gamemechanics.NewSkipPawnEvent(payload.PlayerSide))
-		}
 
 		newEvents = append(newEvents, pawnEvent)
 
@@ -223,13 +218,83 @@ func main() {
 		return c.JSON(result)
 	})
 
+	app.Post("/shuffle", func(c *fiber.Ctx) error {
+		payload := struct {
+			GameId     string `json:"gameId"`
+			HasPeek    bool   `json:"hasPeek"`
+			X          int    `json:"x"`
+			Y          int    `json:"y"`
+			PlayerSide string `json:"playerSide"`
+		}{}
+		if err := c.BodyParser(&payload); err != nil {
+			return err
+		}
+		defenition, ok := gameStorage.Get(payload.GameId)
+		if !ok {
+			return c.SendStatus(400)
+		}
+
+		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+
+		if err != nil {
+			return err
+		}
+
+		skipEvent := gamemechanics.NewSkipPawnEvent(payload.PlayerSide)
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{skipEvent})
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
+
+		result := fiber.Map{
+			"hasPeek": payload.HasPeek,
+		}
+
+		tempVariants := map[string][]string{}
+		for key, val := range processedGameBoard.PawnVariants {
+			if key == payload.PlayerSide {
+				tempVariants[key] = append([]string{}, val...)
+			} else {
+				tempVariants[key] = val
+			}
+		}
+
+		result["variants"] = tempVariants
+
+		if payload.HasPeek {
+			peekPosition := gamemechanics.NewPosition(payload.X, payload.Y)
+			pawnEvent := gamemechanics.NewCreatePawnEvent(peekPosition, payload.PlayerSide)
+			fireEvent := gamemechanics.NewFireDeflectorEvent()
+			var newEvents []gamemechanics.GameEvent
+			newEvents = append(newEvents, pawnEvent)
+			newEvents = append(newEvents, fireEvent)
+
+			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
+			if err != nil {
+				return c.SendStatus(400)
+			}
+
+			newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
+			if err != nil {
+				return c.SendStatus(400)
+			}
+			result["newPawn"] = parsePawn(*newPawn)
+			result["deflections"] = parseDeflections(processedGameBoard.LastDeflections)
+		}
+
+		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "shuffle", result)
+
+		return c.JSON(result)
+	})
+
 	app.Post("/peek", func(c *fiber.Ctx) error {
 		payload := struct {
 			GameId     string `json:"gameId"`
 			X          int    `json:"x"`
 			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
-			SkipPawn   bool   `json:"skipPawn"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -249,11 +314,6 @@ func main() {
 		pawnEvent := gamemechanics.NewCreatePawnEvent(peekPosition, payload.PlayerSide)
 		fireEvent := gamemechanics.NewFireDeflectorEvent()
 		var newEvents []gamemechanics.GameEvent
-
-		if payload.SkipPawn {
-			newEvents = append(newEvents, gamemechanics.NewSkipPawnEvent(payload.PlayerSide))
-		}
-
 		newEvents = append(newEvents, pawnEvent)
 		newEvents = append(newEvents, fireEvent)
 

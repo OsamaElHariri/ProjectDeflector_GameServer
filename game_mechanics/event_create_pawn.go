@@ -16,7 +16,7 @@ func NewCreatePawnEvent(pos Position, playerOwner string) CreatePawnEvent {
 
 func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
 	variants := gameBoardInProcess.PawnVariants[event.playerOwner]
-	variant := variants[len(variants)-2]
+	variant := variants[len(variants)-1]
 
 	newPawn := Pawn{
 		Position:    event.position,
