@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	broadcast "projectdeflector/game/broadcast"
+	player_colors "projectdeflector/game/colors"
 	gamemechanics "projectdeflector/game/game_mechanics"
 	"strconv"
 
@@ -14,6 +15,33 @@ func main() {
 	app := fiber.New()
 
 	gameStorage := gamemechanics.NewStorage()
+
+	colorMap := map[string]string{}
+
+	app.Get("/colors/:id", func(c *fiber.Ctx) error {
+
+		playerId := c.Params("id")
+		colors := player_colors.GetPlayerColors(playerId, 4)
+
+		return c.JSON(fiber.Map{
+			"colors": colors,
+		})
+	})
+
+	app.Post("/color", func(c *fiber.Ctx) error {
+		payload := struct {
+			PlayerId string `json:"playerId"`
+			Color    string `json:"color"`
+		}{}
+
+		if err := c.BodyParser(&payload); err != nil {
+			return c.SendStatus(400)
+		}
+		colorMap[payload.PlayerId] = payload.Color
+		return c.JSON(fiber.Map{
+			"color": payload.Color,
+		})
+	})
 
 	app.Get("/game/:id", func(c *fiber.Ctx) error {
 
@@ -32,8 +60,13 @@ func main() {
 		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
 
 		colors := map[string]string{}
-		colors[processedGameBoard.GameBoard.GetDefenition().PlayerIds[0]] = "#FD1717"
-		colors[processedGameBoard.GameBoard.GetDefenition().PlayerIds[1]] = "#173CFD"
+		for _, id := range processedGameBoard.GameBoard.GetDefenition().PlayerIds {
+			if val, ok := colorMap[id]; ok {
+				colors[id] = val
+			} else {
+				colors[id] = player_colors.GetPlayerColors(id, 1)[0]
+			}
+		}
 
 		result := fiber.Map{
 			"gameId":            defenition.Id,
