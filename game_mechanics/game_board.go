@@ -231,7 +231,24 @@ func (gameBoard GameBoard) getNextPawn(currentPosition Position, currentDirectio
 	}
 
 	return &Pawn{}, errors.New("no next pawn")
+}
 
+func getEdgeDeflection(gameBoard GameBoard, lastDeflection Deflection) Deflection {
+	var pos Position
+	if lastDeflection.ToDirection == UP {
+		pos = position(lastDeflection.Position.X, gameBoard.defenition.YMax+1)
+	} else if lastDeflection.ToDirection == DOWN {
+		pos = position(lastDeflection.Position.X, -1)
+	} else if lastDeflection.ToDirection == LEFT {
+		pos = position(-1, lastDeflection.Position.Y)
+	} else if lastDeflection.ToDirection == RIGHT {
+		pos = position(gameBoard.defenition.XMax+1, lastDeflection.Position.Y)
+	}
+
+	return Deflection{
+		ToDirection: lastDeflection.ToDirection,
+		Position:    pos,
+	}
 }
 
 func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard, []Deflection) {
@@ -244,10 +261,7 @@ func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard
 		},
 	}
 
-	// being stuck in an infinite loop is not possible when given valid inputs.
-	// an upperbound of (100 + gameBoard.Turn)*2 protects against the possibility of
-	// an infinite loop in case unexpected inputs are passed in
-	for i := 0; i < (100+gameBoard.Turn)*2; i++ {
+	for {
 		pawn, err := gameBoard.getNextPawn(currentPosition, currentDirection)
 		if err != nil {
 			break
@@ -276,8 +290,10 @@ func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard
 		})
 	}
 
-	lastDirection := deflections[len(deflections)-1].ToDirection
-	playerId, ok := GetPlayerFromDirection(gameBoard.defenition, lastDirection)
+	lastDeflection := deflections[len(deflections)-1]
+	deflections = append(deflections, getEdgeDeflection(gameBoard, lastDeflection))
+
+	playerId, ok := GetPlayerFromDirection(gameBoard.defenition, lastDeflection.ToDirection)
 	if ok {
 		gameBoard.ScoreBoard[playerId] += 1
 	}
