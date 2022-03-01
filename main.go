@@ -57,7 +57,11 @@ func main() {
 			return err
 		}
 
-		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
+		fireEvent := gamemechanics.NewFireDeflectorEvent()
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
+		if err != nil {
+			return err
+		}
 
 		colors := map[string]string{}
 		for _, id := range processedGameBoard.GameBoard.GetDefenition().PlayerIds {
@@ -74,10 +78,10 @@ func main() {
 			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
 			"variants":          processedGameBoard.PawnVariants,
-			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"targetScore":       defenition.TargetScore,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
 			"colors":            colors,
+			"deflections":       parseDeflections(processedGameBoard.LastDeflections),
 		}
 		return c.JSON(result)
 	})
@@ -229,8 +233,12 @@ func main() {
 		}
 
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
+		fireEvent := gamemechanics.NewFireDeflectorEvent()
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
 
-		deflectionSource := processedGameBoard.VarianceFactory.GenerateDeflectionSource(processedGameBoard.GameBoard, processedGameBoard.GameBoard.Turn)
+		if err != nil {
+			return err
+		}
 
 		allDeflectionsParsed := make([][]Deflection, 0)
 		for i := 0; i < len(allDeflections); i++ {
@@ -241,10 +249,10 @@ func main() {
 			"scoreBoard":        processedGameBoard.GameBoard.ScoreBoard,
 			"variants":          processedGameBoard.PawnVariants,
 			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"deflectionSource":  parseDirectedPosition(deflectionSource),
 			"allDeflections":    allDeflectionsParsed,
 			"winner":            processedGameBoard.Winner,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
+			"deflections":       parseDeflections(processedGameBoard.LastDeflections),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "turn", result)
 

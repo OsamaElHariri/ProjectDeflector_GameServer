@@ -107,10 +107,3 @@ func parsePawn(pawn gamemechanics.Pawn) Pawn {
 func parsePosition(position gamemechanics.Position) Position {
 	return Position{X: position.X, Y: position.Y}
 }
-
-func parseDirectedPosition(directed gamemechanics.DirectedPosition) DirectoedPosition {
-	return DirectoedPosition{
-		Position:  parsePosition(directed.Position),
-		Direction: directed.Direction,
-	}
-}
