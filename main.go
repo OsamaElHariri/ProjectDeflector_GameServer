@@ -153,10 +153,17 @@ func main() {
 
 		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
 
+		fireEvent := gamemechanics.NewFireDeflectorEvent()
+		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
+		if err != nil {
+			return err
+		}
+
 		result := fiber.Map{
-			"scoreBoard": processedGameBoard.GameBoard.ScoreBoard,
-			"variants":   processedGameBoard.PawnVariants,
-			"newPawn":    parsePawn(*newPawn),
+			"scoreBoard":  processedGameBoard.GameBoard.ScoreBoard,
+			"variants":    processedGameBoard.PawnVariants,
+			"newPawn":     parsePawn(*newPawn),
+			"deflections": parseDeflections(processedGameBoard.LastDeflections),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "pawn", result)
 
