@@ -147,6 +147,7 @@ func main() {
 		}
 
 		newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
+		parsedPawn := parsePawn(*newPawn)
 		if err != nil {
 			return c.SendStatus(400)
 		}
@@ -162,7 +163,7 @@ func main() {
 		result := fiber.Map{
 			"scoreBoard":  processedGameBoard.GameBoard.ScoreBoard,
 			"variants":    processedGameBoard.PawnVariants,
-			"newPawn":     parsePawn(*newPawn),
+			"newPawn":     parsedPawn,
 			"deflections": parseDeflections(processedGameBoard.LastDeflections),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "pawn", result)

@@ -39,8 +39,9 @@ type Deflection struct {
 }
 
 type DeflectionEvent struct {
-	Name     string   `json:"name"`
-	Position Position `json:"position"`
+	Name       string   `json:"name"`
+	Position   Position `json:"position"`
+	Durability int      `json:"durability"`
 }
 
 func parseDeflections(deflections []gamemechanics.Deflection) []Deflection {
@@ -62,8 +63,9 @@ func parseDeflectionEvents(deflectionEvents []gamemechanics.DeflectionEvent) []D
 
 	for i, deflectionEvent := range deflectionEvents {
 		parsedDeflectionEvents[i] = DeflectionEvent{
-			Name:     deflectionEvent.Name,
-			Position: parsePosition(deflectionEvent.Position),
+			Name:       deflectionEvent.Name,
+			Position:   parsePosition(deflectionEvent.Position),
+			Durability: deflectionEvent.Durability,
 		}
 	}
 

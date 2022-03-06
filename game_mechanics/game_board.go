@@ -17,7 +17,8 @@ const (
 )
 
 const (
-	DESTROY_PAWM = "destroy_pawn"
+	SET_DURABILITY = "set_durability"
+	DESTROY_PAWM   = "destroy_pawn"
 )
 
 type GameBoardDefenition struct {
@@ -43,8 +44,9 @@ type Deflection struct {
 }
 
 type DeflectionEvent struct {
-	Name     string
-	Position Position
+	Name       string
+	Position   Position
+	Durability int
 }
 
 type DirectedPosition struct {
@@ -270,6 +272,11 @@ func ProcessDeflection(gameBoard GameBoard, current DirectedPosition) (GameBoard
 		currentDirection = pawn.getDeflectedDirection(currentDirection)
 		pawn.Durability -= 1
 		events := make([]DeflectionEvent, 0)
+		events = append(events, DeflectionEvent{
+			Name:       SET_DURABILITY,
+			Position:   pawn.Position,
+			Durability: pawn.Durability,
+		})
 
 		if pawn.Durability == 0 {
 			events = append(events, DeflectionEvent{
