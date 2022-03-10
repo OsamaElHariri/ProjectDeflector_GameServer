@@ -15,6 +15,9 @@ func NewEndTurnEvent(playerOwner string) EndTurnEvent {
 func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
 	gameBoardInProcess.GameBoard.Turn += 1
 
+	nextPlayerTurn := GetPlayerTurn(gameBoardInProcess.GameBoard)
+	gameBoardInProcess.AvailableShuffles[nextPlayerTurn] = 1
+
 	gameBoardInProcess.GameBoard.ScoreBoard[event.playerOwner] += 1
 	return gameBoardInProcess, nil
 }

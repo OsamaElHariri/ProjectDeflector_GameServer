@@ -11,6 +11,7 @@ const (
 
 type ProcessedGameBoard struct {
 	PlayersInMatchPoint  map[string]bool
+	AvailableShuffles    map[string]int
 	GameBoard            GameBoard
 	ProcessingEventIndex int
 	LastDeflections      []Deflection

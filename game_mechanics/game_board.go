@@ -97,12 +97,15 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 	}
 
 	playersInMatchPoint := make(map[string]bool)
+	availableShuffles := make(map[string]int)
 	for _, playerId := range gameBoard.defenition.PlayerIds {
 		playersInMatchPoint[playerId] = false
+		availableShuffles[playerId] = 1
 	}
 
 	gameBoardInProcess := ProcessedGameBoard{
 		PlayersInMatchPoint:  playersInMatchPoint,
+		AvailableShuffles:    availableShuffles,
 		GameBoard:            gameBoard,
 		ProcessingEventIndex: 0,
 		VarianceFactory:      varianceFactory,

@@ -80,6 +80,7 @@ func main() {
 			"variants":          processedGameBoard.PawnVariants,
 			"targetScore":       defenition.TargetScore,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
+			"availableShuffles": processedGameBoard.AvailableShuffles,
 			"colors":            colors,
 			"deflections":       parseDeflections(processedGameBoard.LastDeflections),
 		}
@@ -260,6 +261,7 @@ func main() {
 			"allDeflections":    allDeflectionsParsed,
 			"winner":            processedGameBoard.Winner,
 			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
+			"availableShuffles": processedGameBoard.AvailableShuffles,
 			"deflections":       parseDeflections(processedGameBoard.LastDeflections),
 		}
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "turn", result)
@@ -333,6 +335,7 @@ func main() {
 			result["deflections"] = parseDeflections(processedGameBoard.LastDeflections)
 		}
 
+		result["availableShuffles"] = processedGameBoard.AvailableShuffles
 		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "shuffle", result)
 
 		return c.JSON(result)
