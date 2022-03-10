@@ -83,10 +83,12 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 
 	scoreBoard := make(map[string]int)
 	pawnVariants := make(map[string][]string)
-	for index, playerId := range defenition.PlayerIds {
-		scoreBoard[playerId] = index + 1
+	for _, playerId := range defenition.PlayerIds {
+		scoreBoard[playerId] = 0
 		pawnVariants[playerId] = varianceFactory.GeneratePawnVariant(getPlayerDigest(defenition, playerId), 1)
 	}
+	scoreBoard[defenition.PlayerIds[0]] = 1
+
 	events := defenition.Events
 	defenition.Events = make([]GameEvent, 0)
 	gameBoard := GameBoard{
