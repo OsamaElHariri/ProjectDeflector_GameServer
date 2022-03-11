@@ -172,7 +172,15 @@ func main() {
 			"newPawn":     parsePawn(*newPawn),
 			"deflections": parseDeflections(nextProcessedGameBoard.LastDeflections),
 		}
-		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "pawn", result)
+		broadcastIds := make([]string, 0)
+		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
+			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
+			if id != payload.PlayerSide {
+				broadcastIds = append(broadcastIds, id)
+			}
+
+		}
+		broadcast.SocketBroadcast(broadcastIds, "pawn", result)
 
 		return c.JSON(result)
 	})
@@ -274,7 +282,15 @@ func main() {
 			"availableShuffles": processedGameBoard.AvailableShuffles,
 			"deflections":       parseDeflections(nextProcessedGameBoard.LastDeflections),
 		}
-		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "turn", result)
+		broadcastIds := make([]string, 0)
+		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
+			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
+			if id != payload.PlayerSide {
+				broadcastIds = append(broadcastIds, id)
+			}
+
+		}
+		broadcast.SocketBroadcast(broadcastIds, "turn", result)
 
 		return c.JSON(result)
 	})
@@ -346,7 +362,15 @@ func main() {
 		}
 
 		result["availableShuffles"] = processedGameBoard.AvailableShuffles
-		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "shuffle", result)
+		broadcastIds := make([]string, 0)
+		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
+			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
+			if id != payload.PlayerSide {
+				broadcastIds = append(broadcastIds, id)
+			}
+
+		}
+		broadcast.SocketBroadcast(broadcastIds, "shuffle", result)
 
 		return c.JSON(result)
 	})
@@ -394,7 +418,15 @@ func main() {
 			"newPawn":     parsePawn(*newPawn),
 			"deflections": parseDeflections(processedGameBoard.LastDeflections),
 		}
-		broadcast.SocketBroadcast(processedGameBoard.GameBoard.GetDefenition().PlayerIds, "peek", result)
+		broadcastIds := make([]string, 0)
+		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
+			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
+			if id != payload.PlayerSide {
+				broadcastIds = append(broadcastIds, id)
+			}
+
+		}
+		broadcast.SocketBroadcast(broadcastIds, "peek", result)
 
 		return c.JSON(result)
 	})
