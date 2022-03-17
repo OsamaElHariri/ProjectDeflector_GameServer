@@ -18,3 +18,15 @@ func (event FireDeflectorEvent) UpdateGameBoard(gameBoardInProcess ProcessedGame
 
 	return gameBoardInProcess, nil
 }
+
+func (event FireDeflectorEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"name": event.name,
+	}
+}
+
+func (event FireDeflectorEvent) Decode(anyMap map[string]interface{}) GameEvent {
+	event.name = anyMap["name"].(string)
+
+	return event
+}

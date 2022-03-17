@@ -21,3 +21,17 @@ func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard)
 
 	return gameBoardInProcess, nil
 }
+
+func (event EndTurnEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"name":        event.name,
+		"playerOwner": event.playerOwner,
+	}
+}
+
+func (event EndTurnEvent) Decode(anyMap map[string]interface{}) GameEvent {
+	event.name = anyMap["name"].(string)
+	event.playerOwner = anyMap["playerOwner"].(string)
+
+	return event
+}

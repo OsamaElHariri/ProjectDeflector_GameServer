@@ -18,3 +18,17 @@ func (event WinEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (Pr
 
 	return gameBoardInProcess, nil
 }
+
+func (event WinEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"name":        event.name,
+		"playerOwner": event.playerOwner,
+	}
+}
+
+func (event WinEvent) Decode(anyMap map[string]interface{}) GameEvent {
+	event.name = anyMap["name"].(string)
+	event.playerOwner = anyMap["playerOwner"].(string)
+
+	return event
+}

@@ -43,10 +43,31 @@ type Deflection struct {
 	Events      []DeflectionEvent
 }
 
+func (deflection Deflection) toMap() map[string]interface{} {
+	events := make([]map[string]interface{}, 0)
+	for i := 0; i < len(deflection.Events); i++ {
+		events = append(events, deflection.Events[i].toMap())
+	}
+
+	return map[string]interface{}{
+		"position":    deflection.Position.toMap(),
+		"toDirection": deflection.ToDirection,
+		"events":      events,
+	}
+}
+
 type DeflectionEvent struct {
 	Name       string
 	Position   Position
 	Durability int
+}
+
+func (deflectionEvent DeflectionEvent) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"name":       deflectionEvent.Name,
+		"position":   deflectionEvent.Position.toMap(),
+		"durability": deflectionEvent.Durability,
+	}
 }
 
 type DirectedPosition struct {

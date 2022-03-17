@@ -1,5 +1,7 @@
 package gamemechanics
 
+import "errors"
+
 const (
 	CREATE_PAWN    = "create_pawn"
 	FIRE_DEFLECTOR = "fire_deflector"
@@ -23,4 +25,24 @@ type ProcessedGameBoard struct {
 
 type GameEvent interface {
 	UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error)
+	Encode() map[string]interface{}
+	Decode(anyMap map[string]interface{}) GameEvent
+}
+
+func DecodeGameEvent(props map[string]interface{}) (GameEvent, error) {
+	if props["name"] == CREATE_PAWN {
+		return (CreatePawnEvent{}).Decode(props), nil
+	} else if props["name"] == FIRE_DEFLECTOR {
+		return (FireDeflectorEvent{}).Decode(props), nil
+	} else if props["name"] == SKIP_PAWN {
+		return (SkipPawnEvent{}).Decode(props), nil
+	} else if props["name"] == END_TURN {
+		return (EndTurnEvent{}).Decode(props), nil
+	} else if props["name"] == MATCH_POINT {
+		return (MatchPointEvent{}).Decode(props), nil
+	} else if props["name"] == GAME_WIN {
+		return (WinEvent{}).Decode(props), nil
+	}
+
+	return CreatePawnEvent{}, errors.New("could not parse game event")
 }

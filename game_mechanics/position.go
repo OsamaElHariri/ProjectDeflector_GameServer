@@ -19,3 +19,10 @@ func position(x int, y int) Position {
 func (pos Position) equals(pos2 Position) bool {
 	return pos.X == pos2.X && pos.Y == pos2.Y
 }
+
+func (pos Position) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"x": pos.X,
+		"y": pos.Y,
+	}
+}

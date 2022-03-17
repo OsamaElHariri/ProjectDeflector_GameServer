@@ -17,3 +17,17 @@ func (event MatchPointEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 
 	return gameBoardInProcess, nil
 }
+
+func (event MatchPointEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"name":        event.name,
+		"playerOwner": event.playerOwner,
+	}
+}
+
+func (event MatchPointEvent) Decode(anyMap map[string]interface{}) GameEvent {
+	event.name = anyMap["name"].(string)
+	event.playerOwner = anyMap["playerOwner"].(string)
+
+	return event
+}

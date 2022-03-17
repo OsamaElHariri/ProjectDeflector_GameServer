@@ -4,11 +4,6 @@ import (
 	gamemechanics "projectdeflector/game/game_mechanics"
 )
 
-type DirectoedPosition struct {
-	Position  Position `json:"position"`
-	Direction int      `json:"direction"`
-}
-
 type Position struct {
 	X int `json:"x"`
 	Y int `json:"y"`

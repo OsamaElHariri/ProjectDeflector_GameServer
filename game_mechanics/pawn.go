@@ -38,3 +38,13 @@ func (pawn Pawn) getDeflectedDirection(currentDirection int) int {
 	}
 	return currentDirection
 }
+
+func (pawn Pawn) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"position":    pawn.Position.toMap(),
+		"name":        pawn.Name,
+		"turnPlaced":  pawn.TurnPlaced,
+		"durability":  pawn.Durability,
+		"playerOwner": pawn.PlayerOwner,
+	}
+}

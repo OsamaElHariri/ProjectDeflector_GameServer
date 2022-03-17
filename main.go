@@ -2,11 +2,9 @@ package main
 
 import (
 	"log"
-	"math/rand"
-	broadcast "projectdeflector/game/broadcast"
-	player_colors "projectdeflector/game/colors"
 	gamemechanics "projectdeflector/game/game_mechanics"
-	"strconv"
+
+	"projectdeflector/game/repositories"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,62 +12,39 @@ import (
 func main() {
 	app := fiber.New()
 
-	gameStorage := gamemechanics.NewStorage()
+	repoFactory := repositories.GetRepositoryFactory()
 
-	colorMap := map[string]string{}
-
-	app.Get("/colors/:id", func(c *fiber.Ctx) error {
-
-		playerId := c.Params("id")
-		colors := player_colors.GetPlayerColors(playerId, 4)
-
-		return c.JSON(fiber.Map{
-			"colors": colors,
-		})
-	})
-
-	app.Post("/color", func(c *fiber.Ctx) error {
-		payload := struct {
-			PlayerId string `json:"playerId"`
-			Color    string `json:"color"`
-		}{}
-
-		if err := c.BodyParser(&payload); err != nil {
+	app.Use("/", func(c *fiber.Ctx) error {
+		repo, cleanup, err := repoFactory.GetRepository()
+		if err != nil {
 			return c.SendStatus(400)
 		}
-		colorMap[payload.PlayerId] = payload.Color
-		return c.JSON(fiber.Map{
-			"color": payload.Color,
-		})
+
+		defer cleanup()
+		c.Locals("repo", repo)
+
+		return c.Next()
 	})
 
 	app.Get("/game/:id", func(c *fiber.Ctx) error {
-
 		gameId := c.Params("id")
-		defenition, ok := gameStorage.Get(gameId)
-		if !ok {
-			return c.SendStatus(400)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
 		}
 
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+		processedGameBoard, err := useCase.GetGame(gameId)
 
 		if err != nil {
 			return err
 		}
 
-		fireEvent := gamemechanics.NewFireDeflectorEvent()
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
-		if err != nil {
-			return err
-		}
+		defenition := processedGameBoard.GameBoard.GetDefenition()
 
 		colors := map[string]string{}
 		for _, id := range processedGameBoard.GameBoard.GetDefenition().PlayerIds {
-			if val, ok := colorMap[id]; ok {
-				colors[id] = val
-			} else {
-				colors[id] = player_colors.GetPlayerColors(id, 1)[0]
-			}
+			colors[id] = "#123123"
 		}
 
 		result := fiber.Map{
@@ -96,13 +71,15 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		if len(payload.PlayerIds) != 2 {
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
+		}
+
+		gameId, err := useCase.CreateNewGame(payload.PlayerIds)
+		if err != nil {
 			return c.SendStatus(400)
 		}
-		gameId := strconv.Itoa(rand.Int())
-
-		defenition := gamemechanics.NewGameBoardDefinition(gameId, payload.PlayerIds)
-		gameStorage.Set(gameId, defenition)
 
 		result := fiber.Map{
 			"gameId": gameId,
@@ -125,64 +102,22 @@ func main() {
 			return err
 		}
 
-		defenition, ok := gameStorage.Get(payload.GameId)
-		if !ok {
-			return c.SendStatus(400)
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
 		}
 
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+		result, err := useCase.AddPawn(payload.GameId, gamemechanics.AddPawnRequest{
+			X:          payload.X,
+			Y:          payload.Y,
+			PlayerSide: payload.PlayerSide,
+		})
 
 		if err != nil {
 			return err
 		}
 
-		pawnEvent := gamemechanics.NewCreatePawnEvent(gamemechanics.NewPosition(payload.X, payload.Y), payload.PlayerSide)
-		var newEvents []gamemechanics.GameEvent
-
-		newEvents = append(newEvents, pawnEvent)
-
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
-
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
-
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
-
-		nextProcessedGameBoard, err := gamemechanics.NewGameBoard(processedGameBoard.GameBoard.GetDefenition())
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		fireEvent := gamemechanics.NewFireDeflectorEvent()
-		nextProcessedGameBoard, err = gamemechanics.ProcessEvents(nextProcessedGameBoard, []gamemechanics.GameEvent{fireEvent})
-		if err != nil {
-			return err
-		}
-
-		result := fiber.Map{
-			"scoreBoard":  processedGameBoard.GameBoard.ScoreBoard,
-			"variants":    processedGameBoard.PawnVariants,
-			"newPawn":     parsePawn(*newPawn),
-			"deflections": parseDeflections(nextProcessedGameBoard.LastDeflections),
-		}
-		broadcastIds := make([]string, 0)
-		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
-			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
-			if id != payload.PlayerSide {
-				broadcastIds = append(broadcastIds, id)
-			}
-
-		}
-		broadcast.SocketBroadcast(broadcastIds, "pawn", result)
-
-		return c.JSON(result)
+		return c.JSON(result.ToMap())
 	})
 
 	app.Post("/turn", func(c *fiber.Ctx) error {
@@ -194,185 +129,41 @@ func main() {
 			return err
 		}
 
-		defenition, ok := gameStorage.Get(payload.GameId)
-		if !ok {
-			return c.SendStatus(400)
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
 		}
 
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+		result, err := useCase.EndTurn(payload.GameId, payload.PlayerSide)
 
 		if err != nil {
 			return err
 		}
 
-		allDeflections := make([][]gamemechanics.Deflection, 0)
-
-		hasFired := false
-		fullOnTurnStart := processedGameBoard.GameBoard.IsFull()
-
-		isDense := true
-		for !hasFired || (fullOnTurnStart && isDense) {
-			hasFired = true
-			fireEvent := gamemechanics.NewFireDeflectorEvent()
-			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{fireEvent})
-			if err != nil {
-				return c.SendStatus(400)
-			}
-
-			if len(processedGameBoard.LastDeflections) > 1 {
-				lastDirection := processedGameBoard.LastDeflections[len(processedGameBoard.LastDeflections)-1].ToDirection
-				playerId, ok := gamemechanics.GetPlayerFromDirection(processedGameBoard.GameBoard.GetDefenition(), lastDirection)
-
-				if ok && processedGameBoard.PlayersInMatchPoint[playerId] {
-					winEvent := gamemechanics.NewWinEvent(playerId)
-					processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{winEvent})
-
-					if err != nil {
-						return c.SendStatus(400)
-					}
-					break
-				}
-			}
-
-			allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
-			isDense = processedGameBoard.GameBoard.IsDense()
-		}
-
-		endTurnEvent := gamemechanics.NewEndTurnEvent(payload.PlayerSide)
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{endTurnEvent})
-
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		if processedGameBoard.GameInProgress {
-			matchPointEvents := gamemechanics.GetMatchPointEvents(processedGameBoard)
-			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, matchPointEvents)
-		}
-
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
-
-		nextProcessedGameBoard, err := gamemechanics.NewGameBoard(processedGameBoard.GameBoard.GetDefenition())
-		if err != nil {
-			return c.SendStatus(400)
-		}
-		fireEvent := gamemechanics.NewFireDeflectorEvent()
-		nextProcessedGameBoard, err = gamemechanics.ProcessEvents(nextProcessedGameBoard, []gamemechanics.GameEvent{fireEvent})
-
-		if err != nil {
-			return err
-		}
-
-		allDeflectionsParsed := make([][]Deflection, 0)
-		for i := 0; i < len(allDeflections); i++ {
-			allDeflectionsParsed = append(allDeflectionsParsed, parseDeflections(allDeflections[i]))
-		}
-
-		result := fiber.Map{
-			"scoreBoard":        processedGameBoard.GameBoard.ScoreBoard,
-			"variants":          processedGameBoard.PawnVariants,
-			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"allDeflections":    allDeflectionsParsed,
-			"winner":            processedGameBoard.Winner,
-			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
-			"availableShuffles": processedGameBoard.AvailableShuffles,
-			"deflections":       parseDeflections(nextProcessedGameBoard.LastDeflections),
-		}
-		broadcastIds := make([]string, 0)
-		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
-			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
-			if id != payload.PlayerSide {
-				broadcastIds = append(broadcastIds, id)
-			}
-
-		}
-		broadcast.SocketBroadcast(broadcastIds, "turn", result)
-
-		return c.JSON(result)
+		return c.JSON(result.ToMap())
 	})
 
 	app.Post("/shuffle", func(c *fiber.Ctx) error {
 		payload := struct {
 			GameId     string `json:"gameId"`
-			HasPeek    bool   `json:"hasPeek"`
-			X          int    `json:"x"`
-			Y          int    `json:"y"`
 			PlayerSide string `json:"playerSide"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
 		}
-		defenition, ok := gameStorage.Get(payload.GameId)
-		if !ok {
-			return c.SendStatus(400)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
 		}
 
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+		result, err := useCase.Shuffle(payload.GameId, payload.PlayerSide)
 
 		if err != nil {
 			return err
 		}
 
-		skipEvent := gamemechanics.NewSkipPawnEvent(payload.PlayerSide)
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, []gamemechanics.GameEvent{skipEvent})
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		gameStorage.Set(payload.GameId, processedGameBoard.GameBoard.GetDefenition())
-
-		result := fiber.Map{
-			"hasPeek": payload.HasPeek,
-		}
-
-		tempVariants := map[string][]string{}
-		for key, val := range processedGameBoard.PawnVariants {
-			if key == payload.PlayerSide {
-				tempVariants[key] = append([]string{}, val...)
-			} else {
-				tempVariants[key] = val
-			}
-		}
-
-		result["variants"] = tempVariants
-
-		if payload.HasPeek {
-			peekPosition := gamemechanics.NewPosition(payload.X, payload.Y)
-			pawnEvent := gamemechanics.NewCreatePawnEvent(peekPosition, payload.PlayerSide)
-			fireEvent := gamemechanics.NewFireDeflectorEvent()
-			var newEvents []gamemechanics.GameEvent
-			newEvents = append(newEvents, pawnEvent)
-			newEvents = append(newEvents, fireEvent)
-
-			processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
-			if err != nil {
-				return c.SendStatus(400)
-			}
-
-			newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
-			if err != nil {
-				return c.SendStatus(400)
-			}
-			result["newPawn"] = parsePawn(*newPawn)
-			result["deflections"] = parseDeflections(processedGameBoard.LastDeflections)
-		}
-
-		result["availableShuffles"] = processedGameBoard.AvailableShuffles
-		broadcastIds := make([]string, 0)
-		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
-			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
-			if id != payload.PlayerSide {
-				broadcastIds = append(broadcastIds, id)
-			}
-
-		}
-		broadcast.SocketBroadcast(broadcastIds, "shuffle", result)
-
-		return c.JSON(result)
+		return c.JSON(result.ToMap())
 	})
 
 	app.Post("/peek", func(c *fiber.Ctx) error {
@@ -385,50 +176,23 @@ func main() {
 		if err := c.BodyParser(&payload); err != nil {
 			return err
 		}
-		defenition, ok := gameStorage.Get(payload.GameId)
-		if !ok {
-			return c.SendStatus(400)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
 		}
 
-		processedGameBoard, err := gamemechanics.NewGameBoard(defenition)
+		result, err := useCase.Peek(payload.GameId, gamemechanics.PeekRequest{
+			X:          payload.X,
+			Y:          payload.Y,
+			PlayerSide: payload.PlayerSide,
+		})
 
 		if err != nil {
 			return err
 		}
 
-		peekPosition := gamemechanics.NewPosition(payload.X, payload.Y)
-		pawnEvent := gamemechanics.NewCreatePawnEvent(peekPosition, payload.PlayerSide)
-		fireEvent := gamemechanics.NewFireDeflectorEvent()
-		var newEvents []gamemechanics.GameEvent
-		newEvents = append(newEvents, pawnEvent)
-		newEvents = append(newEvents, fireEvent)
-
-		processedGameBoard, err = gamemechanics.ProcessEvents(processedGameBoard, newEvents)
-
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		newPawn, err := processedGameBoard.GameBoard.GetPawn(gamemechanics.NewPosition(payload.X, payload.Y))
-		if err != nil {
-			return c.SendStatus(400)
-		}
-
-		result := fiber.Map{
-			"newPawn":     parsePawn(*newPawn),
-			"deflections": parseDeflections(processedGameBoard.LastDeflections),
-		}
-		broadcastIds := make([]string, 0)
-		for i := 0; i < len(processedGameBoard.GameBoard.GetDefenition().PlayerIds); i++ {
-			id := processedGameBoard.GameBoard.GetDefenition().PlayerIds[i]
-			if id != payload.PlayerSide {
-				broadcastIds = append(broadcastIds, id)
-			}
-
-		}
-		broadcast.SocketBroadcast(broadcastIds, "peek", result)
-
-		return c.JSON(result)
+		return c.JSON(result.ToMap())
 	})
 
 	log.Fatal(app.Listen(":3000"))
