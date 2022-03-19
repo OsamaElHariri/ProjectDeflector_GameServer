@@ -1,9 +1,7 @@
-package broadcast
+package network
 
 import (
-	"bytes"
 	"encoding/json"
-	"net/http"
 )
 
 func SocketBroadcast(ids []string, event string, payload map[string]interface{}) error {
@@ -23,6 +21,5 @@ func SocketBroadcast(ids []string, event string, payload map[string]interface{})
 }
 
 func socketBroadcast(id string, payload []byte) {
-	resp, _ := http.Post("http://127.0.0.1:8080/realtime/notify/"+id, "application/json", bytes.NewBuffer(payload))
-	resp.Body.Close()
+	SendPost("http://127.0.0.1:8080/realtime/notify/"+id, payload)
 }

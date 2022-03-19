@@ -2,7 +2,7 @@ package gamemechanics
 
 import (
 	"errors"
-	"projectdeflector/game/broadcast"
+	"projectdeflector/game/network"
 	"projectdeflector/game/repositories"
 )
 
@@ -155,7 +155,7 @@ func (useCase UseCase) AddPawn(gameId string, addPawnRequest AddPawnRequest) (Ad
 	}
 
 	broadcastIds := getBroadcastIds(processedGameBoard, addPawnRequest.PlayerSide)
-	broadcast.SocketBroadcast(broadcastIds, "pawn", result.ToMap())
+	network.SocketBroadcast(broadcastIds, "pawn", result.ToMap())
 
 	return result, nil
 }
@@ -254,7 +254,10 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		}
 	}
 
-	err = useCase.Repo.ReplaceGame(gameId, getInsertDefenition(processedGameBoard.GameBoard.defenition))
+	insert := getInsertDefenition(processedGameBoard.GameBoard.defenition)
+	insert.Winner = processedGameBoard.Winner
+
+	err = useCase.Repo.ReplaceGame(gameId, insert)
 	if err != nil {
 		return EndTurnResult{}, err
 	}
@@ -282,7 +285,24 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	}
 
 	broadcastIds := getBroadcastIds(processedGameBoard, playerSide)
-	broadcast.SocketBroadcast(broadcastIds, "turn", result.ToMap())
+	network.SocketBroadcast(broadcastIds, "turn", result.ToMap())
+
+	if insert.Winner != "" {
+		repoStatUpdates, err := useCase.Repo.GetPlayersGameStats(processedGameBoard.GameBoard.defenition.PlayerIds)
+		statUpdates := []network.GameEndUserUpdate{}
+		for i := 0; i < len(repoStatUpdates); i++ {
+			statUpdates = append(statUpdates, network.GameEndUserUpdate{
+				PlayerId: repoStatUpdates[i].PlayerId,
+				Games:    repoStatUpdates[i].Games,
+				Wins:     repoStatUpdates[i].Wins,
+			})
+		}
+
+		if err == nil {
+			network.NotifyUserServiceGameEnd(statUpdates)
+		}
+
+	}
 
 	return result, nil
 }
@@ -323,7 +343,7 @@ func (useCase UseCase) Shuffle(gameId string, playerSide string) (ShuffleResult,
 	}
 
 	broadcastIds := getBroadcastIds(processedGameBoard, playerSide)
-	broadcast.SocketBroadcast(broadcastIds, "shuffle", result.ToMap())
+	network.SocketBroadcast(broadcastIds, "shuffle", result.ToMap())
 
 	return result, nil
 }
@@ -383,7 +403,7 @@ func (useCase UseCase) Peek(gameId string, peekRequest PeekRequest) (PeekResult,
 	}
 
 	broadcastIds := getBroadcastIds(processedGameBoard, peekRequest.PlayerSide)
-	broadcast.SocketBroadcast(broadcastIds, "peek", result.ToMap())
+	network.SocketBroadcast(broadcastIds, "peek", result.ToMap())
 
 	return result, nil
 }
