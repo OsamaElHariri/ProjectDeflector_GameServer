@@ -62,7 +62,7 @@ func main() {
 		return c.JSON(result)
 	})
 
-	app.Post("/game", func(c *fiber.Ctx) error {
+	app.Post("/internal/game", func(c *fiber.Ctx) error {
 		payload := struct {
 			PlayerIds []string `json:"playerIds"`
 		}{}

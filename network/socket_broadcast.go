@@ -21,5 +21,5 @@ func SocketBroadcast(ids []string, event string, payload map[string]interface{})
 }
 
 func socketBroadcast(id string, payload []byte) {
-	SendPost("http://127.0.0.1:8080/realtime/notify/"+id, payload)
+	SendPost("http://127.0.0.1:8080/realtime/internal/notify/"+id, payload)
 }
