@@ -26,6 +26,14 @@ func main() {
 		return c.Next()
 	})
 
+	app.Use("/", func(c *fiber.Ctx) error {
+		userId := c.Get("x-user-id")
+		if userId != "" {
+			c.Locals("userId", userId)
+		}
+		return c.Next()
+	})
+
 	app.Get("/game/:id", func(c *fiber.Ctx) error {
 		gameId := c.Params("id")
 
@@ -87,16 +95,12 @@ func main() {
 		return c.JSON(result)
 	})
 
-	app.Delete("/game", func(c *fiber.Ctx) error {
-		return c.SendString("success")
-	})
-
 	app.Post("/pawn", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
 		payload := struct {
-			GameId     string `json:"gameId"`
-			X          int    `json:"x"`
-			Y          int    `json:"y"`
-			PlayerSide string `json:"playerSide"`
+			GameId string `json:"gameId"`
+			X      int    `json:"x"`
+			Y      int    `json:"y"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -110,7 +114,7 @@ func main() {
 		result, err := useCase.AddPawn(payload.GameId, gamemechanics.AddPawnRequest{
 			X:          payload.X,
 			Y:          payload.Y,
-			PlayerSide: payload.PlayerSide,
+			PlayerSide: playerId,
 		})
 
 		if err != nil {
@@ -121,9 +125,9 @@ func main() {
 	})
 
 	app.Post("/turn", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
 		payload := struct {
-			GameId     string `json:"gameId"`
-			PlayerSide string `json:"playerSide"`
+			GameId string `json:"gameId"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -134,7 +138,7 @@ func main() {
 			Repo: repo,
 		}
 
-		result, err := useCase.EndTurn(payload.GameId, payload.PlayerSide)
+		result, err := useCase.EndTurn(payload.GameId, playerId)
 
 		if err != nil {
 			return err
@@ -144,9 +148,9 @@ func main() {
 	})
 
 	app.Post("/shuffle", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
 		payload := struct {
-			GameId     string `json:"gameId"`
-			PlayerSide string `json:"playerSide"`
+			GameId string `json:"gameId"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -157,7 +161,7 @@ func main() {
 			Repo: repo,
 		}
 
-		result, err := useCase.Shuffle(payload.GameId, payload.PlayerSide)
+		result, err := useCase.Shuffle(payload.GameId, playerId)
 
 		if err != nil {
 			return err
@@ -167,11 +171,11 @@ func main() {
 	})
 
 	app.Post("/peek", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
 		payload := struct {
-			GameId     string `json:"gameId"`
-			X          int    `json:"x"`
-			Y          int    `json:"y"`
-			PlayerSide string `json:"playerSide"`
+			GameId string `json:"gameId"`
+			X      int    `json:"x"`
+			Y      int    `json:"y"`
 		}{}
 		if err := c.BodyParser(&payload); err != nil {
 			return err
@@ -185,7 +189,7 @@ func main() {
 		result, err := useCase.Peek(payload.GameId, gamemechanics.PeekRequest{
 			X:          payload.X,
 			Y:          payload.Y,
-			PlayerSide: payload.PlayerSide,
+			PlayerSide: playerId,
 		})
 
 		if err != nil {
