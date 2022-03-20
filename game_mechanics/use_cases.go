@@ -104,6 +104,8 @@ func (res AddPawnResult) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"newPawn":     res.NewPawn.toMap(),
 		"deflections": deflections,
+		"variants":    res.Variants,
+		"scoreBoard":  res.ScoreBoard,
 	}
 }
 
