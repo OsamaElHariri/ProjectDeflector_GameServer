@@ -16,9 +16,8 @@ type RandomVarianceFactory struct{}
 
 func (factory RandomVarianceFactory) GeneratePawnVariant(str string, turns int) []string {
 	hashGen := md5.New()
-	hash := hashGen.Sum([]byte(str))
-	var seed uint64 = binary.BigEndian.Uint64(hash)
-
+	hashGen.Sum([]byte(str))
+	var seed uint64 = binary.BigEndian.Uint64(hashGen.Sum(nil))
 	rand.Seed(int64(seed))
 
 	variants := make([]string, turns)
@@ -35,10 +34,10 @@ func (factory RandomVarianceFactory) GeneratePawnVariant(str string, turns int) 
 
 func (factory RandomVarianceFactory) GenerateDeflectionSource(gameBoard GameBoard, turn int) DirectedPosition {
 	hashGen := md5.New()
-	hash := hashGen.Sum([]byte(strconv.Itoa(turn) + gameBoard.defenition.Id))
-	var seed uint64 = binary.BigEndian.Uint64(hash)
-
+	hashGen.Write([]byte(strconv.Itoa(turn) + gameBoard.defenition.Id))
+	var seed uint64 = binary.BigEndian.Uint64(hashGen.Sum(nil))
 	rand.Seed(int64(seed))
+
 	if rand.Float64() < 0.5 {
 		return DirectedPosition{
 			Position:  position(gameBoard.defenition.XMax/2, gameBoard.defenition.YMax+1),
