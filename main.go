@@ -48,26 +48,7 @@ func main() {
 			return err
 		}
 
-		defenition := processedGameBoard.GameBoard.GetDefenition()
-
-		colors := map[string]string{}
-		for _, id := range processedGameBoard.GameBoard.GetDefenition().PlayerIds {
-			colors[id] = "#123123"
-		}
-
-		result := fiber.Map{
-			"gameId":            defenition.Id,
-			"playerIds":         defenition.PlayerIds,
-			"gameBoard":         parseGameBoard(processedGameBoard.GameBoard),
-			"playerTurn":        gamemechanics.GetPlayerTurn(processedGameBoard.GameBoard),
-			"variants":          processedGameBoard.PawnVariants,
-			"targetScore":       defenition.TargetScore,
-			"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
-			"availableShuffles": processedGameBoard.AvailableShuffles,
-			"colors":            colors,
-			"deflections":       parseDeflections(processedGameBoard.LastDeflections),
-		}
-		return c.JSON(result)
+		return c.JSON(processedGameBoard.ToMap())
 	})
 
 	app.Post("/internal/game", func(c *fiber.Ctx) error {

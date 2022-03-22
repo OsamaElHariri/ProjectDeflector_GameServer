@@ -23,6 +23,27 @@ type ProcessedGameBoard struct {
 	PawnVariants         map[string][]string
 }
 
+func (processedGameBoard ProcessedGameBoard) toMap() map[string]interface{} {
+	defenition := processedGameBoard.GameBoard.GetDefenition()
+
+	deflections := make([]map[string]interface{}, 0)
+	for i := 0; i < len(processedGameBoard.LastDeflections); i++ {
+		deflections = append(deflections, processedGameBoard.LastDeflections[i].toMap())
+	}
+
+	return map[string]interface{}{
+		"gameId":            defenition.Id,
+		"playerIds":         defenition.PlayerIds,
+		"gameBoard":         processedGameBoard.GameBoard.toMap(),
+		"playerTurn":        GetPlayerTurn(processedGameBoard.GameBoard),
+		"variants":          processedGameBoard.PawnVariants,
+		"targetScore":       defenition.TargetScore,
+		"matchPointPlayers": processedGameBoard.PlayersInMatchPoint,
+		"availableShuffles": processedGameBoard.AvailableShuffles,
+		"deflections":       deflections,
+	}
+}
+
 type GameEvent interface {
 	UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error)
 	Encode() map[string]interface{}

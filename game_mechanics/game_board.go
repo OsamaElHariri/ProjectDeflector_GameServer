@@ -37,6 +37,30 @@ type GameBoard struct {
 	ScoreBoard map[string]int
 }
 
+func (gameBoard GameBoard) toMap() map[string]interface{} {
+
+	pawns := make([][]map[string]interface{}, len(gameBoard.Pawns))
+	for i := 0; i < len(gameBoard.Pawns); i++ {
+		for j := 0; j < len(gameBoard.Pawns[i]); j++ {
+			if gameBoard.Pawns[i][j] != nil {
+				pawns[i] = append(pawns[i], gameBoard.Pawns[i][j].toMap())
+			} else {
+				pawns[i] = append(pawns[i], Pawn{}.toMap())
+			}
+		}
+	}
+	return map[string]interface{}{
+		"id":         gameBoard.defenition.Id,
+		"xMax":       gameBoard.defenition.XMax,
+		"xMin":       0,
+		"yMax":       gameBoard.defenition.YMax,
+		"yMin":       0,
+		"turn":       gameBoard.Turn,
+		"pawns":      pawns,
+		"scoreBoard": gameBoard.ScoreBoard,
+	}
+}
+
 type Deflection struct {
 	Position    Position
 	ToDirection int
