@@ -193,6 +193,14 @@ func (gameBoard GameBoard) getArea() int {
 	return (gameBoard.defenition.XMax + 1) * (gameBoard.defenition.YMax + 1)
 }
 
+func (gameBoard GameBoard) CopyScoreBoard() map[string]int {
+	currentScoreBoard := map[string]int{}
+	for key, value := range gameBoard.ScoreBoard {
+		currentScoreBoard[key] = value
+	}
+	return currentScoreBoard
+}
+
 func (gameBoard GameBoard) getPawnCount() int {
 	count := 0
 	for i := 0; i <= gameBoard.defenition.YMax; i++ {

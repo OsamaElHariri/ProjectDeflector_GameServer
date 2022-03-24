@@ -66,12 +66,18 @@ func getProcessedGameBoard(repo repositories.Repository, id string) (ProcessedGa
 }
 
 type GetGameResult struct {
-	processedGameBoard ProcessedGameBoard
-	EventCount         int
+	ProcessedGameBoard     ProcessedGameBoard
+	NextProcessedGameBoard ProcessedGameBoard
+	EventCount             int
 }
 
 func (res GetGameResult) ToMap() map[string]interface{} {
-	toMap := res.processedGameBoard.toMap()
+	res.ProcessedGameBoard.LastDeflections = res.NextProcessedGameBoard.LastDeflections
+	toMap := res.ProcessedGameBoard.toMap()
+	toMap["postDeflectionPartialGameBoard"] = PostDeflectionPartialGameBoard{
+		PreviousScoreBoard: res.ProcessedGameBoard.GameBoard.ScoreBoard,
+		ScoreBoard:         res.NextProcessedGameBoard.GameBoard.ScoreBoard,
+	}
 	toMap["eventCount"] = res.EventCount
 	return toMap
 }
@@ -84,15 +90,20 @@ func (useCase UseCase) GetGame(id string) (GetGameResult, error) {
 	}
 	eventCount := len(processedGameBoard.GameBoard.defenition.Events)
 
+	nextProcessedGameBoard, err := NewGameBoard(processedGameBoard.GameBoard.GetDefenition())
+	if err != nil {
+		return GetGameResult{}, err
+	}
 	fireEvent := NewFireDeflectorEvent()
-	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{fireEvent})
+	nextProcessedGameBoard, err = ProcessEvents(nextProcessedGameBoard, []GameEvent{fireEvent})
 	if err != nil {
 		return GetGameResult{}, err
 	}
 
 	return GetGameResult{
-		processedGameBoard: processedGameBoard,
-		EventCount:         eventCount,
+		ProcessedGameBoard:     processedGameBoard,
+		EventCount:             eventCount,
+		NextProcessedGameBoard: nextProcessedGameBoard,
 	}, nil
 }
 
@@ -103,12 +114,13 @@ type AddPawnRequest struct {
 }
 
 type AddPawnResult struct {
-	ScoreBoard         map[string]int
-	Variants           map[string][]string
-	NewPawn            Pawn
-	Deflections        []Deflection
-	EventCount         int
-	PreviousEventCount int
+	ScoreBoard                     map[string]int
+	Variants                       map[string][]string
+	NewPawn                        Pawn
+	Deflections                    []Deflection
+	PostDeflectionPartialGameBoard PostDeflectionPartialGameBoard
+	EventCount                     int
+	PreviousEventCount             int
 }
 
 func (res AddPawnResult) ToMap() map[string]interface{} {
@@ -119,12 +131,13 @@ func (res AddPawnResult) ToMap() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"newPawn":            res.NewPawn.toMap(),
-		"deflections":        deflections,
-		"variants":           res.Variants,
-		"scoreBoard":         res.ScoreBoard,
-		"eventCount":         res.EventCount,
-		"previousEventCount": res.PreviousEventCount,
+		"newPawn":                        res.NewPawn.toMap(),
+		"deflections":                    deflections,
+		"postDeflectionPartialGameBoard": res.PostDeflectionPartialGameBoard,
+		"variants":                       res.Variants,
+		"scoreBoard":                     res.ScoreBoard,
+		"eventCount":                     res.EventCount,
+		"previousEventCount":             res.PreviousEventCount,
 	}
 }
 
@@ -171,10 +184,14 @@ func (useCase UseCase) AddPawn(gameId string, addPawnRequest AddPawnRequest) (Ad
 	}
 
 	result := AddPawnResult{
-		ScoreBoard:         processedGameBoard.GameBoard.ScoreBoard,
-		Variants:           processedGameBoard.PawnVariants,
-		NewPawn:            *newPawn,
-		Deflections:        nextProcessedGameBoard.LastDeflections,
+		ScoreBoard:  processedGameBoard.GameBoard.ScoreBoard,
+		Variants:    processedGameBoard.PawnVariants,
+		NewPawn:     *newPawn,
+		Deflections: nextProcessedGameBoard.LastDeflections,
+		PostDeflectionPartialGameBoard: PostDeflectionPartialGameBoard{
+			PreviousScoreBoard: processedGameBoard.GameBoard.ScoreBoard,
+			ScoreBoard:         nextProcessedGameBoard.GameBoard.ScoreBoard,
+		},
 		EventCount:         eventCount,
 		PreviousEventCount: previousEventCount,
 	}
@@ -185,17 +202,24 @@ func (useCase UseCase) AddPawn(gameId string, addPawnRequest AddPawnRequest) (Ad
 	return result, nil
 }
 
+type PostDeflectionPartialGameBoard struct {
+	PreviousScoreBoard map[string]int `json:"previousScoreBoard"`
+	ScoreBoard         map[string]int `json:"scoreBoard"`
+}
+
 type EndTurnResult struct {
-	ScoreBoard         map[string]int
-	Variants           map[string][]string
-	PlayerTurn         string
-	AllDeflections     [][]Deflection
-	Winner             string
-	MatchPointPlayers  map[string]bool
-	AvailableShuffles  map[string]int
-	Deflections        []Deflection
-	EventCount         int
-	PreviousEventCount int
+	ScoreBoard                         map[string]int
+	Variants                           map[string][]string
+	PlayerTurn                         string
+	AllDeflections                     [][]Deflection
+	AllPostDeflectionPartialGameBoards []PostDeflectionPartialGameBoard
+	Winner                             string
+	MatchPointPlayers                  map[string]bool
+	AvailableShuffles                  map[string]int
+	Deflections                        []Deflection
+	PostDeflectionPartialGameBoard     PostDeflectionPartialGameBoard
+	EventCount                         int
+	PreviousEventCount                 int
 }
 
 func (res EndTurnResult) ToMap() map[string]interface{} {
@@ -214,16 +238,18 @@ func (res EndTurnResult) ToMap() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"scoreBoard":         res.ScoreBoard,
-		"variants":           res.Variants,
-		"playerTurn":         res.PlayerTurn,
-		"allDeflections":     allDeflections,
-		"winner":             res.Winner,
-		"matchPointPlayers":  res.MatchPointPlayers,
-		"availableShuffles":  res.AvailableShuffles,
-		"deflections":        deflections,
-		"eventCount":         res.EventCount,
-		"previousEventCount": res.PreviousEventCount,
+		"scoreBoard":                         res.ScoreBoard,
+		"variants":                           res.Variants,
+		"playerTurn":                         res.PlayerTurn,
+		"allDeflections":                     allDeflections,
+		"winner":                             res.Winner,
+		"matchPointPlayers":                  res.MatchPointPlayers,
+		"availableShuffles":                  res.AvailableShuffles,
+		"deflections":                        deflections,
+		"eventCount":                         res.EventCount,
+		"previousEventCount":                 res.PreviousEventCount,
+		"allPostDeflectionPartialGameBoards": res.AllPostDeflectionPartialGameBoards,
+		"postDeflectionPartialGameBoard":     res.PostDeflectionPartialGameBoard,
 	}
 }
 
@@ -236,6 +262,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	previousEventCount := len(processedGameBoard.GameBoard.defenition.Events)
 
 	allDeflections := make([][]Deflection, 0)
+	partialGameBoards := make([]PostDeflectionPartialGameBoard, 0)
 
 	hasFired := false
 	fullOnTurnStart := processedGameBoard.GameBoard.IsFull()
@@ -243,6 +270,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	isDense := true
 	for !hasFired || (fullOnTurnStart && isDense) {
 		hasFired = true
+		scoreBoard := processedGameBoard.GameBoard.CopyScoreBoard()
 		fireEvent := NewFireDeflectorEvent()
 		processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{fireEvent})
 		if err != nil {
@@ -264,6 +292,10 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 			}
 		}
 
+		partialGameBoards = append(partialGameBoards, PostDeflectionPartialGameBoard{
+			PreviousScoreBoard: scoreBoard,
+			ScoreBoard:         processedGameBoard.GameBoard.CopyScoreBoard(),
+		})
 		allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
 		isDense = processedGameBoard.GameBoard.IsDense()
 	}
@@ -305,14 +337,19 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	}
 
 	result := EndTurnResult{
-		ScoreBoard:         processedGameBoard.GameBoard.ScoreBoard,
-		Variants:           processedGameBoard.PawnVariants,
-		PlayerTurn:         GetPlayerTurn(processedGameBoard.GameBoard),
-		Winner:             processedGameBoard.Winner,
-		AllDeflections:     allDeflections,
-		AvailableShuffles:  processedGameBoard.AvailableShuffles,
-		MatchPointPlayers:  processedGameBoard.PlayersInMatchPoint,
-		Deflections:        nextProcessedGameBoard.LastDeflections,
+		ScoreBoard:                         processedGameBoard.GameBoard.ScoreBoard,
+		Variants:                           processedGameBoard.PawnVariants,
+		PlayerTurn:                         GetPlayerTurn(processedGameBoard.GameBoard),
+		Winner:                             processedGameBoard.Winner,
+		AllDeflections:                     allDeflections,
+		AllPostDeflectionPartialGameBoards: partialGameBoards,
+		AvailableShuffles:                  processedGameBoard.AvailableShuffles,
+		MatchPointPlayers:                  processedGameBoard.PlayersInMatchPoint,
+		Deflections:                        nextProcessedGameBoard.LastDeflections,
+		PostDeflectionPartialGameBoard: PostDeflectionPartialGameBoard{
+			PreviousScoreBoard: processedGameBoard.GameBoard.ScoreBoard,
+			ScoreBoard:         nextProcessedGameBoard.GameBoard.ScoreBoard,
+		},
 		EventCount:         eventCount,
 		PreviousEventCount: previousEventCount,
 	}
@@ -396,10 +433,11 @@ type PeekRequest struct {
 }
 
 type PeekResult struct {
-	NewPawn            Pawn
-	Deflections        []Deflection
-	EventCount         int
-	PreviousEventCount int
+	NewPawn                        Pawn
+	Deflections                    []Deflection
+	EventCount                     int
+	PreviousEventCount             int
+	PostDeflectionPartialGameBoard PostDeflectionPartialGameBoard
 }
 
 func (res PeekResult) ToMap() map[string]interface{} {
@@ -410,10 +448,11 @@ func (res PeekResult) ToMap() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"newPawn":            res.NewPawn.toMap(),
-		"deflections":        deflections,
-		"eventCount":         res.EventCount,
-		"previousEventCount": res.PreviousEventCount,
+		"newPawn":                        res.NewPawn.toMap(),
+		"deflections":                    deflections,
+		"eventCount":                     res.EventCount,
+		"previousEventCount":             res.PreviousEventCount,
+		"postDeflectionPartialGameBoard": res.PostDeflectionPartialGameBoard,
 	}
 }
 
@@ -427,12 +466,16 @@ func (useCase UseCase) Peek(gameId string, peekRequest PeekRequest) (PeekResult,
 
 	peekPosition := NewPosition(peekRequest.X, peekRequest.Y)
 	pawnEvent := NewCreatePawnEvent(peekPosition, peekRequest.PlayerSide)
-	fireEvent := NewFireDeflectorEvent()
-	var newEvents []GameEvent
-	newEvents = append(newEvents, pawnEvent)
-	newEvents = append(newEvents, fireEvent)
 
-	processedGameBoard, err = ProcessEvents(processedGameBoard, newEvents)
+	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{pawnEvent})
+
+	if err != nil {
+		return PeekResult{}, err
+	}
+	scoreBoard := processedGameBoard.GameBoard.CopyScoreBoard()
+
+	fireEvent := NewFireDeflectorEvent()
+	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{fireEvent})
 
 	if err != nil {
 		return PeekResult{}, err
@@ -444,8 +487,12 @@ func (useCase UseCase) Peek(gameId string, peekRequest PeekRequest) (PeekResult,
 	}
 
 	result := PeekResult{
-		NewPawn:            *newPawn,
-		Deflections:        processedGameBoard.LastDeflections,
+		NewPawn:     *newPawn,
+		Deflections: processedGameBoard.LastDeflections,
+		PostDeflectionPartialGameBoard: PostDeflectionPartialGameBoard{
+			PreviousScoreBoard: scoreBoard,
+			ScoreBoard:         processedGameBoard.GameBoard.ScoreBoard,
+		},
 		EventCount:         previousEventCount,
 		PreviousEventCount: previousEventCount,
 	}
