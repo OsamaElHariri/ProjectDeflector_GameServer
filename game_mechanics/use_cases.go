@@ -22,6 +22,8 @@ func getInsertDefenition(defenition GameBoardDefenition) repositories.InserGameB
 		YMax:        defenition.YMax,
 		TargetScore: defenition.TargetScore,
 		Events:      mappedEvents,
+		TimePerTurn: defenition.TimePerTurn,
+		StartTime:   defenition.StartTime,
 	}
 }
 
@@ -71,6 +73,8 @@ func getGameBoardFromDbDefenition(repoDefenition repositories.GetGameBoardDefeni
 		YMax:        repoDefenition.YMax,
 		XMax:        repoDefenition.XMax,
 		TargetScore: repoDefenition.TargetScore,
+		StartTime:   repoDefenition.StartTime,
+		TimePerTurn: repoDefenition.TimePerTurn,
 	}
 
 	return NewGameBoard(defenition)
@@ -232,6 +236,7 @@ type EndTurnResult struct {
 	AvailableShuffles                  map[string]int
 	Deflections                        []Deflection
 	PostDeflectionPartialGameBoard     PostDeflectionPartialGameBoard
+	LastTurnEndTime                    int64
 	EventCount                         int
 	PreviousEventCount                 int
 }
@@ -262,6 +267,7 @@ func (res EndTurnResult) ToMap() map[string]interface{} {
 		"deflections":                        deflections,
 		"eventCount":                         res.EventCount,
 		"previousEventCount":                 res.PreviousEventCount,
+		"lastTurnEndTime":                    res.LastTurnEndTime,
 		"allPostDeflectionPartialGameBoards": res.AllPostDeflectionPartialGameBoards,
 		"postDeflectionPartialGameBoard":     res.PostDeflectionPartialGameBoard,
 	}
@@ -273,8 +279,48 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	if err != nil {
 		return EndTurnResult{}, err
 	}
-	previousEventCount := len(processedGameBoard.GameBoard.defenition.Events)
+	endResult, err := endGameTurn(useCase.Repo, processedGameBoard, playerSide)
+	if err != nil {
+		return EndTurnResult{}, err
+	}
+	broadcastIds := getBroadcastIds(processedGameBoard, playerSide)
+	network.SocketBroadcast(broadcastIds, "turn", endResult.ToMap())
 
+	if processedGameBoard.Winner != "" {
+		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard)
+	}
+
+	return endResult, nil
+}
+
+func (useCase UseCase) ExpireTurn(gameId string, playerSide string, eventCount int) (EndTurnResult, error) {
+	processedGameBoard, err := getLockedProcessedGameBoard(useCase.Repo, gameId)
+
+	if err != nil {
+		return EndTurnResult{}, err
+	}
+
+	if len(processedGameBoard.GameBoard.defenition.Events) != eventCount {
+		return EndTurnResult{}, errors.New("turn already ended")
+	}
+
+	endResult, err := endGameTurn(useCase.Repo, processedGameBoard, "system")
+	if err != nil {
+		return EndTurnResult{}, err
+	}
+
+	network.SocketBroadcast(processedGameBoard.GameBoard.defenition.PlayerIds, "turn", endResult.ToMap())
+
+	if endResult.Winner != "" {
+		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard)
+	}
+
+	return endResult, nil
+}
+
+func endGameTurn(repo repositories.Repository, processedGameBoard ProcessedGameBoard, playerSide string) (EndTurnResult, error) {
+	gameId := processedGameBoard.GameBoard.defenition.Id
+	previousEventCount := len(processedGameBoard.GameBoard.defenition.Events)
 	allDeflections := make([][]Deflection, 0)
 	partialGameBoards := make([]PostDeflectionPartialGameBoard, 0)
 
@@ -286,9 +332,10 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		hasFired = true
 		scoreBoard := processedGameBoard.GameBoard.CopyScoreBoard()
 		fireEvent := NewFireDeflectorEvent()
+		var err error
 		processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{fireEvent})
 		if err != nil {
-			useCase.Repo.UnlockGame(gameId)
+			repo.UnlockGame(gameId)
 			return EndTurnResult{}, err
 		}
 
@@ -301,7 +348,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 				processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{winEvent})
 
 				if err != nil {
-					useCase.Repo.UnlockGame(gameId)
+					repo.UnlockGame(gameId)
 					return EndTurnResult{}, err
 				}
 				break
@@ -317,10 +364,10 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	}
 
 	endTurnEvent := NewEndTurnEvent(playerSide)
-	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{endTurnEvent})
+	processedGameBoard, err := ProcessEvents(processedGameBoard, []GameEvent{endTurnEvent})
 
 	if err != nil {
-		useCase.Repo.UnlockGame(gameId)
+		repo.UnlockGame(gameId)
 		return EndTurnResult{}, err
 	}
 
@@ -329,7 +376,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		processedGameBoard, err = ProcessEvents(processedGameBoard, matchPointEvents)
 
 		if err != nil {
-			useCase.Repo.UnlockGame(gameId)
+			repo.UnlockGame(gameId)
 			return EndTurnResult{}, err
 		}
 	}
@@ -337,9 +384,9 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	insert := getInsertDefenition(processedGameBoard.GameBoard.defenition)
 	insert.Winner = processedGameBoard.Winner
 
-	err = useCase.Repo.ReplaceGame(gameId, insert)
+	err = repo.ReplaceGame(gameId, insert)
 	if err != nil {
-		useCase.Repo.UnlockGame(gameId)
+		repo.UnlockGame(gameId)
 		return EndTurnResult{}, err
 	}
 	eventCount := len(processedGameBoard.GameBoard.defenition.Events)
@@ -371,29 +418,25 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		},
 		EventCount:         eventCount,
 		PreviousEventCount: previousEventCount,
+		LastTurnEndTime:    processedGameBoard.LastTurnEndTime,
 	}
-
-	broadcastIds := getBroadcastIds(processedGameBoard, playerSide)
-	network.SocketBroadcast(broadcastIds, "turn", result.ToMap())
-
-	if insert.Winner != "" {
-		repoStatUpdates, err := useCase.Repo.GetPlayersGameStats(processedGameBoard.GameBoard.defenition.PlayerIds)
-		statUpdates := []network.GameEndUserUpdate{}
-		for i := 0; i < len(repoStatUpdates); i++ {
-			statUpdates = append(statUpdates, network.GameEndUserUpdate{
-				PlayerId: repoStatUpdates[i].PlayerId,
-				Games:    repoStatUpdates[i].Games,
-				Wins:     repoStatUpdates[i].Wins,
-			})
-		}
-
-		if err == nil {
-			network.NotifyUserServiceGameEnd(statUpdates)
-		}
-
-	}
-
 	return result, nil
+}
+
+func notifyUserServiceOfGameEnd(repo repositories.Repository, processedGameBoard ProcessedGameBoard) {
+	repoStatUpdates, err := repo.GetPlayersGameStats(processedGameBoard.GameBoard.defenition.PlayerIds)
+	statUpdates := []network.GameEndUserUpdate{}
+	for i := 0; i < len(repoStatUpdates); i++ {
+		statUpdates = append(statUpdates, network.GameEndUserUpdate{
+			PlayerId: repoStatUpdates[i].PlayerId,
+			Games:    repoStatUpdates[i].Games,
+			Wins:     repoStatUpdates[i].Wins,
+		})
+	}
+
+	if err == nil {
+		network.NotifyUserServiceGameEnd(statUpdates)
+	}
 }
 
 type ShuffleResult struct {

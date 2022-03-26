@@ -20,6 +20,8 @@ type InserGameBoardDefenition struct {
 	XMax        int      `bson:"x_max"`
 	TargetScore int      `bson:"target_score"`
 	LockUntil   int      `bson:"lock_until"`
+	TimePerTurn int      `bson:"time_per_turn"`
+	StartTime   int64    `bson:"start_time"`
 	Winner      string
 	Events      []map[string]interface{}
 }
@@ -38,6 +40,8 @@ type GetGameBoardDefenitionResult struct {
 	YMax        int      `bson:"y_max"`
 	XMax        int      `bson:"x_max"`
 	TargetScore int      `bson:"target_score"`
+	TimePerTurn int      `bson:"time_per_turn"`
+	StartTime   int64    `bson:"start_time"`
 	Events      []map[string]interface{}
 }
 

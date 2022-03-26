@@ -21,6 +21,7 @@ type ProcessedGameBoard struct {
 	GameInProgress       bool
 	Winner               string
 	PawnVariants         map[string][]string
+	LastTurnEndTime      int64
 }
 
 func (processedGameBoard ProcessedGameBoard) toMap() map[string]interface{} {
@@ -34,6 +35,8 @@ func (processedGameBoard ProcessedGameBoard) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"gameId":            defenition.Id,
 		"playerIds":         defenition.PlayerIds,
+		"timePerTurn":       defenition.TimePerTurn,
+		"lastTurnEndTime":   processedGameBoard.LastTurnEndTime,
 		"gameBoard":         processedGameBoard.GameBoard.toMap(),
 		"playerTurn":        GetPlayerTurn(processedGameBoard.GameBoard),
 		"variants":          processedGameBoard.PawnVariants,

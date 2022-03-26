@@ -130,6 +130,30 @@ func main() {
 		return c.JSON(result.ToMap())
 	})
 
+	app.Post("/turn/expire", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
+		payload := struct {
+			GameId     string `json:"gameId"`
+			EventCount int    `json:"eventCount"`
+		}{}
+		if err := c.BodyParser(&payload); err != nil {
+			return err
+		}
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
+		}
+
+		result, err := useCase.ExpireTurn(payload.GameId, playerId, payload.EventCount)
+
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(result.ToMap())
+	})
+
 	app.Post("/shuffle", func(c *fiber.Ctx) error {
 		playerId := c.Locals("userId").(string)
 		payload := struct {

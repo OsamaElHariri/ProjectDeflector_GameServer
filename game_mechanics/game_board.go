@@ -2,6 +2,7 @@ package gamemechanics
 
 import (
 	"errors"
+	"time"
 )
 
 const (
@@ -28,6 +29,8 @@ type GameBoardDefenition struct {
 	XMax        int
 	Events      []GameEvent
 	TargetScore int
+	StartTime   int64
+	TimePerTurn int
 }
 
 type GameBoard struct {
@@ -50,14 +53,15 @@ func (gameBoard GameBoard) toMap() map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{
-		"id":         gameBoard.defenition.Id,
-		"xMax":       gameBoard.defenition.XMax,
-		"xMin":       0,
-		"yMax":       gameBoard.defenition.YMax,
-		"yMin":       0,
-		"turn":       gameBoard.Turn,
-		"pawns":      pawns,
-		"scoreBoard": gameBoard.ScoreBoard,
+		"id":          gameBoard.defenition.Id,
+		"xMax":        gameBoard.defenition.XMax,
+		"xMin":        0,
+		"yMax":        gameBoard.defenition.YMax,
+		"yMin":        0,
+		"turn":        gameBoard.Turn,
+		"pawns":       pawns,
+		"scoreBoard":  gameBoard.ScoreBoard,
+		"timePerTurn": gameBoard.defenition.TimePerTurn,
 	}
 }
 
@@ -107,6 +111,8 @@ func NewGameBoardDefinition(gameId string, playerIds []string) GameBoardDefeniti
 		XMax:        2,
 		Events:      make([]GameEvent, 0),
 		TargetScore: 7,
+		StartTime:   time.Now().UnixMilli(),
+		TimePerTurn: 45 * 1000,
 	}
 
 	return definition
@@ -158,6 +164,7 @@ func newGameBoard(defenition GameBoardDefenition, varianceFactory VarianceFactor
 		VarianceFactory:      varianceFactory,
 		GameInProgress:       true,
 		PawnVariants:         pawnVariants,
+		LastTurnEndTime:      defenition.StartTime,
 	}
 	return ProcessEvents(gameBoardInProcess, events)
 }
