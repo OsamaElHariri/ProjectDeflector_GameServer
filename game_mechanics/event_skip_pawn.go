@@ -15,10 +15,15 @@ func NewSkipPawnEvent(playerOwner string) SkipPawnEvent {
 }
 
 func (event SkipPawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
+	currentPlayer := GetPlayerTurn(gameBoardInProcess.GameBoard)
+	if event.playerOwner != currentPlayer {
+		return ProcessedGameBoard{}, errors.New("out of turn action")
+	}
+
 	shuffleCount := gameBoardInProcess.AvailableShuffles[event.playerOwner]
 
 	if shuffleCount <= 0 {
-		return gameBoardInProcess, errors.New("Player " + event.playerOwner + " is out of shuffles for turn")
+		return gameBoardInProcess, errors.New("out of shuffles for turn")
 	}
 
 	gameBoardInProcess.AvailableShuffles[event.playerOwner] -= 1

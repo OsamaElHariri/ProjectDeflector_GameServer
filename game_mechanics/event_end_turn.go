@@ -1,5 +1,7 @@
 package gamemechanics
 
+import "errors"
+
 type EndTurnEvent struct {
 	name        string
 	playerOwner string
@@ -13,11 +15,18 @@ func NewEndTurnEvent(playerOwner string) EndTurnEvent {
 }
 
 func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
+	currentPlayer := GetPlayerTurn(gameBoardInProcess.GameBoard)
+	if event.playerOwner != currentPlayer {
+		return ProcessedGameBoard{}, errors.New("cannot end the turn of another player")
+	}
+
 	gameBoardInProcess.GameBoard.Turn += 1
 
 	nextPlayerTurn := GetPlayerTurn(gameBoardInProcess.GameBoard)
 	gameBoardInProcess.AvailableShuffles[nextPlayerTurn] = 1
-	gameBoardInProcess.GameBoard.ScoreBoard[nextPlayerTurn] += 1
+	if gameBoardInProcess.GameBoard.ScoreBoard[nextPlayerTurn] < gameBoardInProcess.GameBoard.defenition.TargetScore {
+		gameBoardInProcess.GameBoard.ScoreBoard[nextPlayerTurn] += 1
+	}
 
 	return gameBoardInProcess, nil
 }

@@ -19,7 +19,7 @@ func main() {
 	app.Use("/", func(c *fiber.Ctx) error {
 		repo, cleanup, err := repoFactory.GetRepository()
 		if err != nil {
-			return c.SendStatus(400)
+			return err
 		}
 
 		defer cleanup()
@@ -59,7 +59,7 @@ func main() {
 		}{}
 
 		if err := c.BodyParser(&payload); err != nil {
-			return c.SendStatus(400)
+			return err
 		}
 
 		repo := c.Locals("repo").(repositories.Repository)
@@ -69,7 +69,7 @@ func main() {
 
 		gameId, err := useCase.CreateNewGame(payload.PlayerIds)
 		if err != nil {
-			return c.SendStatus(400)
+			return err
 		}
 
 		result := fiber.Map{

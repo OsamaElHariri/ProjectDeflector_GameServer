@@ -1,5 +1,7 @@
 package gamemechanics
 
+import "errors"
+
 type CreatePawnEvent struct {
 	name        string
 	position    Position
@@ -15,6 +17,15 @@ func NewCreatePawnEvent(pos Position, playerOwner string) CreatePawnEvent {
 }
 
 func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard) (ProcessedGameBoard, error) {
+	currentPlayer := GetPlayerTurn(gameBoardInProcess.GameBoard)
+	if event.playerOwner != currentPlayer {
+		return ProcessedGameBoard{}, errors.New("out of turn action")
+	}
+
+	if gameBoardInProcess.GameBoard.ScoreBoard[event.playerOwner] <= 0 {
+		return ProcessedGameBoard{}, errors.New("out of score")
+	}
+
 	variants := gameBoardInProcess.PawnVariants[event.playerOwner]
 	variant := variants[len(variants)-1]
 
