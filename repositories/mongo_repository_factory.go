@@ -32,7 +32,7 @@ func getMongoRepositoryFactory() MongoRepositoryFactory {
 
 func (factory MongoRepositoryFactory) GetRepository() (Repository, func(), error) {
 	client := factory.client
-	ctx, cancelContext := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancelContext := context.WithTimeout(context.TODO(), 5*time.Second)
 
 	cleanUpFunc := func() {
 		cancelContext()

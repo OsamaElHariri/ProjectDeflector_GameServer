@@ -23,7 +23,7 @@ func (event SkipPawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard
 	shuffleCount := gameBoardInProcess.AvailableShuffles[event.playerOwner]
 
 	if shuffleCount <= 0 {
-		return gameBoardInProcess, errors.New("out of shuffles for turn")
+		return gameBoardInProcess, errors.New("out of shuffles for this turn")
 	}
 
 	gameBoardInProcess.AvailableShuffles[event.playerOwner] -= 1

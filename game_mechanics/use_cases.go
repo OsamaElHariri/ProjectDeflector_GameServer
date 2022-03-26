@@ -37,12 +37,23 @@ func (useCase UseCase) CreateNewGame(playerIds []string) (string, error) {
 	return useCase.Repo.InsertGame(insert)
 }
 
+func getLockedProcessedGameBoard(repo repositories.Repository, id string) (ProcessedGameBoard, error) {
+	repoDefenition, err := repo.GetGameAndLock(id)
+	if err != nil {
+		return ProcessedGameBoard{}, err
+	}
+	return getGameBoardFromDbDefenition(repoDefenition)
+}
+
 func getProcessedGameBoard(repo repositories.Repository, id string) (ProcessedGameBoard, error) {
 	repoDefenition, err := repo.GetGame(id)
 	if err != nil {
 		return ProcessedGameBoard{}, err
 	}
+	return getGameBoardFromDbDefenition(repoDefenition)
+}
 
+func getGameBoardFromDbDefenition(repoDefenition repositories.GetGameBoardDefenitionResult) (ProcessedGameBoard, error) {
 	decodedEvents := make([]GameEvent, 0)
 	for i := 0; i < len(repoDefenition.Events); i++ {
 
@@ -142,7 +153,7 @@ func (res AddPawnResult) ToMap() map[string]interface{} {
 }
 
 func (useCase UseCase) AddPawn(gameId string, addPawnRequest AddPawnRequest) (AddPawnResult, error) {
-	processedGameBoard, err := getProcessedGameBoard(useCase.Repo, gameId)
+	processedGameBoard, err := getLockedProcessedGameBoard(useCase.Repo, gameId)
 
 	if err != nil {
 		return AddPawnResult{}, err
@@ -157,17 +168,20 @@ func (useCase UseCase) AddPawn(gameId string, addPawnRequest AddPawnRequest) (Ad
 	processedGameBoard, err = ProcessEvents(processedGameBoard, newEvents)
 
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return AddPawnResult{}, err
 	}
 
 	newPawn, err := processedGameBoard.GameBoard.GetPawn(NewPosition(addPawnRequest.X, addPawnRequest.Y))
 
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return AddPawnResult{}, err
 	}
 
 	err = useCase.Repo.ReplaceGame(gameId, getInsertDefenition(processedGameBoard.GameBoard.defenition))
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return AddPawnResult{}, err
 	}
 	eventCount := len(processedGameBoard.GameBoard.defenition.Events)
@@ -254,7 +268,7 @@ func (res EndTurnResult) ToMap() map[string]interface{} {
 }
 
 func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult, error) {
-	processedGameBoard, err := getProcessedGameBoard(useCase.Repo, gameId)
+	processedGameBoard, err := getLockedProcessedGameBoard(useCase.Repo, gameId)
 
 	if err != nil {
 		return EndTurnResult{}, err
@@ -274,6 +288,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		fireEvent := NewFireDeflectorEvent()
 		processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{fireEvent})
 		if err != nil {
+			useCase.Repo.UnlockGame(gameId)
 			return EndTurnResult{}, err
 		}
 
@@ -286,6 +301,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 				processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{winEvent})
 
 				if err != nil {
+					useCase.Repo.UnlockGame(gameId)
 					return EndTurnResult{}, err
 				}
 				break
@@ -304,6 +320,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{endTurnEvent})
 
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return EndTurnResult{}, err
 	}
 
@@ -312,6 +329,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 		processedGameBoard, err = ProcessEvents(processedGameBoard, matchPointEvents)
 
 		if err != nil {
+			useCase.Repo.UnlockGame(gameId)
 			return EndTurnResult{}, err
 		}
 	}
@@ -321,6 +339,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 
 	err = useCase.Repo.ReplaceGame(gameId, insert)
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return EndTurnResult{}, err
 	}
 	eventCount := len(processedGameBoard.GameBoard.defenition.Events)
@@ -394,7 +413,7 @@ func (res ShuffleResult) ToMap() map[string]interface{} {
 }
 
 func (useCase UseCase) Shuffle(gameId string, playerSide string) (ShuffleResult, error) {
-	processedGameBoard, err := getProcessedGameBoard(useCase.Repo, gameId)
+	processedGameBoard, err := getLockedProcessedGameBoard(useCase.Repo, gameId)
 
 	if err != nil {
 		return ShuffleResult{}, err
@@ -404,11 +423,13 @@ func (useCase UseCase) Shuffle(gameId string, playerSide string) (ShuffleResult,
 	skipEvent := NewSkipPawnEvent(playerSide)
 	processedGameBoard, err = ProcessEvents(processedGameBoard, []GameEvent{skipEvent})
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return ShuffleResult{}, err
 	}
 
 	err = useCase.Repo.ReplaceGame(gameId, getInsertDefenition(processedGameBoard.GameBoard.defenition))
 	if err != nil {
+		useCase.Repo.UnlockGame(gameId)
 		return ShuffleResult{}, err
 	}
 	eventCount := len(processedGameBoard.GameBoard.defenition.Events)

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +19,7 @@ type InserGameBoardDefenition struct {
 	YMax        int      `bson:"y_max"`
 	XMax        int      `bson:"x_max"`
 	TargetScore int      `bson:"target_score"`
+	LockUntil   int      `bson:"lock_until"`
 	Winner      string
 	Events      []map[string]interface{}
 }
@@ -37,6 +39,56 @@ type GetGameBoardDefenitionResult struct {
 	XMax        int      `bson:"x_max"`
 	TargetScore int      `bson:"target_score"`
 	Events      []map[string]interface{}
+}
+
+func (repo MongoRepository) GetGameAndLock(id string) (GetGameBoardDefenitionResult, error) {
+	var result GetGameBoardDefenitionResult
+
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return GetGameBoardDefenitionResult{}, err
+	}
+
+	now := time.Now().Unix()
+
+	// if something is locked for more than 5 seconds
+	// it means that something went wrong and it will no longer be locked
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "lock_until", Value: now + 5},
+		}},
+	}
+
+	filter := bson.D{
+		{Key: "_id", Value: objectId},
+		{Key: "lock_until", Value: bson.D{
+			{Key: "$lte", Value: now},
+		}},
+	}
+	err = repo.client.Database("game_management").Collection("games").FindOneAndUpdate(repo.ctx, filter, update).Decode(&result)
+
+	if err != nil {
+		return GetGameBoardDefenitionResult{}, err
+	}
+	return result, nil
+}
+
+func (repo MongoRepository) UnlockGame(id string) error {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objectId}}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "lock_until", Value: 0},
+		}},
+	}
+
+	_, err = repo.client.Database("game_management").Collection("games").UpdateOne(repo.ctx, filter, update)
+	return err
 }
 
 func (repo MongoRepository) GetGame(id string) (GetGameBoardDefenitionResult, error) {
@@ -64,6 +116,8 @@ func (repo MongoRepository) ReplaceGame(id string, defenition InserGameBoardDefe
 		return err
 	}
 	filter := bson.D{{Key: "_id", Value: objectId}}
+	defenition.LockUntil = 0
+
 	_, err = repo.client.Database("game_management").Collection("games").ReplaceOne(repo.ctx, filter, defenition)
 
 	return err
