@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/json"
+	"os"
 )
 
 func SocketBroadcast(ids []string, event string, payload map[string]interface{}) error {
@@ -21,5 +22,5 @@ func SocketBroadcast(ids []string, event string, payload map[string]interface{})
 }
 
 func socketBroadcast(id string, payload []byte) {
-	SendPost("http://127.0.0.1:8080/realtime/internal/notify/"+id, payload)
+	SendPost(os.Getenv("INTERNAL_SERVICES_URL")+"/realtime/internal/notify/"+id, payload)
 }

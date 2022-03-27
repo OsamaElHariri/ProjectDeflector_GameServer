@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,7 +15,8 @@ type MongoRepositoryFactory struct {
 }
 
 func getMongoRepositoryFactory() MongoRepositoryFactory {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://some_user:password@127.0.0.1:27018"))
+	url := os.Getenv("DB_URL")
+	client, err := mongo.NewClient(options.Client().ApplyURI(url))
 
 	if err != nil {
 		log.Fatal(err)

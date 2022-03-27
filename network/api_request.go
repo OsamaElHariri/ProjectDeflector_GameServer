@@ -3,6 +3,7 @@ package network
 import (
 	"bytes"
 	"net/http"
+	"os"
 )
 
 func SendPost(url string, payload []byte) error {
@@ -13,7 +14,7 @@ func SendPost(url string, payload []byte) error {
 
 	req.Header = http.Header{
 		"Content-Type":  []string{"application/json"},
-		"Authorization": []string{"Bearer SecretInternalToken!"},
+		"Authorization": []string{"Bearer " + os.Getenv("INTERNAL_TOKEN")},
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err == nil {

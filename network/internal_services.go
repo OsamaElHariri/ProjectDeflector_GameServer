@@ -1,6 +1,9 @@
 package network
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"os"
+)
 
 type GameEndUserUpdate struct {
 	PlayerId string `json:"playerId"`
@@ -17,5 +20,5 @@ func NotifyUserServiceGameEnd(updates []GameEndUserUpdate) {
 		return
 	}
 
-	SendPost("http://127.0.0.1:8080/users/internal/stats/games", res)
+	SendPost(os.Getenv("INTERNAL_SERVICES_URL")+"/users/internal/stats/games", res)
 }
