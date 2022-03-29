@@ -16,7 +16,7 @@ type RandomVarianceFactory struct{}
 
 func (factory RandomVarianceFactory) GeneratePawnVariant(str string, turns int) []string {
 	hashGen := md5.New()
-	hashGen.Sum([]byte(str))
+	hashGen.Write([]byte(str))
 	var seed uint64 = binary.BigEndian.Uint64(hashGen.Sum(nil))
 	rand.Seed(int64(seed))
 
