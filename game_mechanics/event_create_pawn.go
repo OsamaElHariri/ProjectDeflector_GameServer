@@ -50,16 +50,16 @@ func (event CreatePawnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoa
 
 func (event CreatePawnEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"name":        event.name,
-		"position_x":  event.position.X,
-		"position_y":  event.position.Y,
-		"playerOwner": event.playerOwner,
+		"name":         event.name,
+		"position_x":   event.position.X,
+		"position_y":   event.position.Y,
+		"player_owner": event.playerOwner,
 	}
 }
 
 func (event CreatePawnEvent) Decode(anyMap map[string]interface{}) GameEvent {
 	event.name = anyMap["name"].(string)
-	event.playerOwner = anyMap["playerOwner"].(string)
+	event.playerOwner = anyMap["player_owner"].(string)
 	event.position = position(int(anyMap["position_x"].(int32)), int(anyMap["position_y"].(int32)))
 
 	return event

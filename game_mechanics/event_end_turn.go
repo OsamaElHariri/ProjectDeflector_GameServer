@@ -41,16 +41,16 @@ func (event EndTurnEvent) UpdateGameBoard(gameBoardInProcess ProcessedGameBoard)
 
 func (event EndTurnEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"name":        event.name,
-		"playerOwner": event.playerOwner,
-		"endTime":     event.endTime,
+		"name":         event.name,
+		"player_owner": event.playerOwner,
+		"end_time":     event.endTime,
 	}
 }
 
 func (event EndTurnEvent) Decode(anyMap map[string]interface{}) GameEvent {
 	event.name = anyMap["name"].(string)
-	event.playerOwner = anyMap["playerOwner"].(string)
-	event.endTime = anyMap["endTime"].(int64)
+	event.playerOwner = anyMap["player_owner"].(string)
+	event.endTime = anyMap["end_time"].(int64)
 
 	return event
 }
