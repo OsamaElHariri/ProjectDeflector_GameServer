@@ -83,6 +83,20 @@ func main() {
 		return c.JSON(processedGameBoard.ToMap())
 	})
 
+	app.Post("/stats/game", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
+		}
+
+		useCase.SendPlayerStatsUpdate(playerId)
+		return c.JSON(fiber.Map{
+			"status": "ok",
+		})
+	})
+
 	app.Post("/internal/game", func(c *fiber.Ctx) error {
 		payload := struct {
 			PlayerIds []string `json:"playerIds"`

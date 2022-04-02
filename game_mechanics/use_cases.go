@@ -295,7 +295,7 @@ func (useCase UseCase) EndTurn(gameId string, playerSide string) (EndTurnResult,
 	network.SocketBroadcast(broadcastIds, "turn", endResult.ToMap())
 
 	if processedGameBoard.Winner != "" {
-		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard)
+		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard.GameBoard.defenition.PlayerIds)
 	}
 
 	return endResult, nil
@@ -320,7 +320,7 @@ func (useCase UseCase) ExpireTurn(gameId string, playerSide string, eventCount i
 	network.SocketBroadcast(processedGameBoard.GameBoard.defenition.PlayerIds, "turn", endResult.ToMap())
 
 	if endResult.Winner != "" {
-		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard)
+		notifyUserServiceOfGameEnd(useCase.Repo, processedGameBoard.GameBoard.defenition.PlayerIds)
 	}
 
 	return endResult, nil
@@ -432,8 +432,12 @@ func endGameTurn(repo repositories.Repository, processedGameBoard ProcessedGameB
 	return result, nil
 }
 
-func notifyUserServiceOfGameEnd(repo repositories.Repository, processedGameBoard ProcessedGameBoard) {
-	repoStatUpdates, err := repo.GetPlayersGameStats(processedGameBoard.GameBoard.defenition.PlayerIds)
+func (useCase UseCase) SendPlayerStatsUpdate(playerId string) {
+	notifyUserServiceOfGameEnd(useCase.Repo, []string{playerId})
+}
+
+func notifyUserServiceOfGameEnd(repo repositories.Repository, playerIds []string) {
+	repoStatUpdates, err := repo.GetPlayersGameStats(playerIds)
 	statUpdates := []network.GameEndUserUpdate{}
 	for i := 0; i < len(repoStatUpdates); i++ {
 		statUpdates = append(statUpdates, network.GameEndUserUpdate{
