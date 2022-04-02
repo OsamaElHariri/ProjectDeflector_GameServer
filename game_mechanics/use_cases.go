@@ -349,6 +349,14 @@ func endGameTurn(repo repositories.Repository, processedGameBoard ProcessedGameB
 
 		if len(processedGameBoard.LastDeflections) > 1 {
 			lastDirection := processedGameBoard.LastDeflections[len(processedGameBoard.LastDeflections)-1].ToDirection
+
+			partialGameBoards = append(partialGameBoards, PostDeflectionPartialGameBoard{
+				PreviousScoreBoard: scoreBoard,
+				ScoreBoard:         processedGameBoard.GameBoard.CopyScoreBoard(),
+			})
+			allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
+			isDense = processedGameBoard.GameBoard.IsDense()
+
 			playerId, ok := GetPlayerFromDirection(processedGameBoard.GameBoard.GetDefenition(), lastDirection)
 
 			if ok && processedGameBoard.PlayersInMatchPoint[playerId] {
@@ -362,13 +370,6 @@ func endGameTurn(repo repositories.Repository, processedGameBoard ProcessedGameB
 				break
 			}
 		}
-
-		partialGameBoards = append(partialGameBoards, PostDeflectionPartialGameBoard{
-			PreviousScoreBoard: scoreBoard,
-			ScoreBoard:         processedGameBoard.GameBoard.CopyScoreBoard(),
-		})
-		allDeflections = append(allDeflections, processedGameBoard.LastDeflections)
-		isDense = processedGameBoard.GameBoard.IsDense()
 	}
 
 	endTurnEvent := NewEndTurnEvent(playerSide)
