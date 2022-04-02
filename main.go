@@ -47,6 +47,25 @@ func main() {
 		return c.Next()
 	})
 
+	app.Get("/ongoing/game", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := gamemechanics.UseCase{
+			Repo: repo,
+		}
+
+		gameId, err := useCase.GetOngoingGameId(playerId)
+
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(fiber.Map{
+			"gameId": gameId,
+		})
+	})
+
 	app.Get("/game/:id", func(c *fiber.Ctx) error {
 		gameId := c.Params("id")
 

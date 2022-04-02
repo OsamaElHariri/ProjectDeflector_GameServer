@@ -122,6 +122,14 @@ func (useCase UseCase) GetGame(id string) (GetGameResult, error) {
 	}, nil
 }
 
+func (useCase UseCase) GetOngoingGameId(playerId string) (string, error) {
+	dbGameBoard, err := useCase.Repo.GetOngoingPlayerGame(playerId)
+	if err != nil {
+		return "", err
+	}
+	return dbGameBoard.Id, nil
+}
+
 type AddPawnRequest struct {
 	X          int
 	Y          int

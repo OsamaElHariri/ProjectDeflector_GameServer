@@ -11,6 +11,7 @@ type Repository interface {
 	UnlockGame(id string) error
 	GetGameAndLock(id string) (GetGameBoardDefenitionResult, error)
 	GetPlayersGameStats(playerIds []string) ([]PlayerGameStats, error)
+	GetOngoingPlayerGame(playerId string) (GetGameBoardDefenitionResult, error)
 }
 
 func GetRepositoryFactory() RepositoryFactory {

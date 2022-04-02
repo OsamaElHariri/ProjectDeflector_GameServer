@@ -113,6 +113,22 @@ func (repo MongoRepository) GetGame(id string) (GetGameBoardDefenitionResult, er
 	return result, nil
 }
 
+func (repo MongoRepository) GetOngoingPlayerGame(playerId string) (GetGameBoardDefenitionResult, error) {
+	var result GetGameBoardDefenitionResult
+
+	filter := bson.D{
+		{Key: "player_ids", Value: playerId},
+		{Key: "winner", Value: ""},
+	}
+	err := repo.client.Database("game_management").Collection("games").FindOne(repo.ctx, filter).Decode(&result)
+
+	if err != nil {
+		return GetGameBoardDefenitionResult{}, err
+	}
+
+	return result, nil
+}
+
 func (repo MongoRepository) ReplaceGame(id string, defenition InserGameBoardDefenition) error {
 
 	objectId, err := primitive.ObjectIDFromHex(id)
