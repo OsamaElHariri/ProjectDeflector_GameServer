@@ -110,7 +110,7 @@ func NewGameBoardDefinition(gameId string, playerIds []string) GameBoardDefeniti
 		YMax:        2,
 		XMax:        2,
 		Events:      make([]GameEvent, 0),
-		TargetScore: 7,
+		TargetScore: 6,
 		StartTime:   time.Now().UnixMilli(),
 		TimePerTurn: 45 * 1000,
 	}
