@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoRepository struct {
@@ -219,4 +220,82 @@ func getPlayerGameStats(repo MongoRepository, playerId string) (PlayerGameStats,
 	}
 
 	return stats, nil
+}
+
+type WinStreak struct {
+	HasWonToday bool
+	WinStreak   int
+	NextDay     int64
+}
+
+func (repo MongoRepository) GetWinStreak(playerId string) (WinStreak, error) {
+	gameTimes, err := getWonGamesStartTimes(repo, playerId)
+	if err != nil {
+		return WinStreak{}, err
+	}
+	hasWonToday := false
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	dayCheck := today
+	totalDayStreak := 0
+	for i := 0; i < len(gameTimes); i++ {
+		gameTime := time.UnixMilli(gameTimes[i].StartTime)
+		gameTime = time.Date(gameTime.Year(), gameTime.Month(), gameTime.Day(), 0, 0, 0, 0, gameTime.Location())
+		if gameTime.Equal(today) {
+			hasWonToday = true
+			continue
+		}
+
+		if gameTime.Before(dayCheck) {
+			if dayCheck.Sub(gameTime).Hours() > 24 {
+				break
+			} else {
+				dayCheck = gameTime
+				totalDayStreak += 1
+			}
+		}
+	}
+
+	if hasWonToday {
+		totalDayStreak += 1
+	}
+	return WinStreak{
+		HasWonToday: hasWonToday,
+		WinStreak:   totalDayStreak,
+		NextDay:     time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location()).UnixMilli(),
+	}, nil
+}
+
+type GameTime struct {
+	StartTime int64 `bson:"start_time"`
+}
+
+func getWonGamesStartTimes(repo MongoRepository, playerId string) ([]GameTime, error) {
+	filter := bson.D{
+		{Key: "winner", Value: playerId},
+	}
+	opt := options.Find()
+	opt.Projection = bson.D{
+		{Key: "start_time", Value: 1},
+	}
+
+	opt.Sort = bson.D{
+		{Key: "start_time", Value: -1},
+	}
+
+	cursor, err := repo.client.Database("game_management").Collection("games").Find(repo.ctx, filter, opt)
+
+	if err != nil {
+		return []GameTime{}, err
+	}
+	var results []GameTime
+	if err = cursor.All(repo.ctx, &results); err != nil {
+		return []GameTime{}, nil
+	}
+
+	if err := cursor.Close(repo.ctx); err != nil {
+		return []GameTime{}, nil
+	}
+
+	return results, nil
 }

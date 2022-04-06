@@ -91,10 +91,11 @@ func main() {
 			Repo: repo,
 		}
 
-		useCase.SendPlayerStatsUpdate(playerId)
-		return c.JSON(fiber.Map{
-			"status": "ok",
-		})
+		stats, err := useCase.GetPlayerStats(playerId)
+		if err != nil {
+			return err
+		}
+		return c.JSON(stats.ToMap())
 	})
 
 	app.Post("/internal/game", func(c *fiber.Ctx) error {

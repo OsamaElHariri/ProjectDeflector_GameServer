@@ -432,8 +432,42 @@ func endGameTurn(repo repositories.Repository, processedGameBoard ProcessedGameB
 	return result, nil
 }
 
-func (useCase UseCase) SendPlayerStatsUpdate(playerId string) {
-	notifyUserServiceOfGameEnd(useCase.Repo, []string{playerId})
+type PlayerStats struct {
+	Games       int
+	Wins        int
+	HasWonToday bool
+	WinStreak   int
+	NextDay     int64
+}
+
+func (stats PlayerStats) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"games":       stats.Games,
+		"wins":        stats.Wins,
+		"hasWonToday": stats.HasWonToday,
+		"winStreak":   stats.WinStreak,
+		"nextDay":     stats.NextDay,
+	}
+}
+
+func (useCase UseCase) GetPlayerStats(playerId string) (PlayerStats, error) {
+	winStreak, err := useCase.Repo.GetWinStreak(playerId)
+	if err != nil {
+		return PlayerStats{}, err
+	}
+
+	winStats, err := useCase.Repo.GetPlayersGameStats([]string{playerId})
+	if err != nil {
+		return PlayerStats{}, err
+	}
+
+	return PlayerStats{
+		Games:       winStats[0].Games,
+		Wins:        winStats[0].Wins,
+		HasWonToday: winStreak.HasWonToday,
+		WinStreak:   winStreak.WinStreak,
+		NextDay:     winStreak.NextDay,
+	}, nil
 }
 
 func notifyUserServiceOfGameEnd(repo repositories.Repository, playerIds []string) {
