@@ -215,8 +215,13 @@ func getPlayerGameStats(repo MongoRepository, playerId string) (PlayerGameStats,
 
 	stats := PlayerGameStats{
 		PlayerId: playerId,
-		Wins:     int(results[0]["wins"].(int32)),
-		Games:    int(results[0]["totalGames"].(int32)),
+		Wins:     0,
+		Games:    0,
+	}
+
+	if len(results) > 0 {
+		stats.Wins = int(results[0]["wins"].(int32))
+		stats.Games = int(results[0]["totalGames"].(int32))
 	}
 
 	return stats, nil
